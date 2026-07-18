@@ -3,6 +3,7 @@ import base64
 import json
 import os
 import subprocess
+import time
 
 import requests
 
@@ -27,7 +28,8 @@ If the video already has a voiceover, treat it as the baseline your variants com
 
 Return JSON only, matching exactly:
 {{"variants": [{{"label": "A", "script": "...", "voice_settings": {{"speed": 1.0}}}}, ...],
-  "rationale": "2-3 sentences: what you saw in the footage and why these variants test it"}}
+  "rationale": "2-3 sentences: what you saw in the footage and why these variants test it",
+  "transcript": "the words spoken in the video, transcribed verbatim — or null if no speech"}}
 
 Rules: the video is {duration:.0f} seconds long — each script must be comfortably speakable
 within it (roughly {max_words} words at normal pace). speed in [0.7, 1.2]. Labels "A", "B",
@@ -55,20 +57,22 @@ def suggest(base_media_key: str, context: str = "", n: int = 3) -> dict:
         max_words=int(duration * WORDS_PER_SEC),
         context_line=f"Creator context: {context}" if context else "",
     )
-    resp = requests.post(
-        URL,
-        params={"key": os.environ["GEMINI_API_KEY"]},
-        json={
-            "contents": [{"parts": [
-                {"inline_data": {"mime_type": "video/mp4", "data": video_b64}},
-                {"text": prompt},
-            ]}],
-            "generationConfig": {"response_mime_type": "application/json"},
-        },
-        timeout=120,
-    )
+    body = {
+        "contents": [{"parts": [
+            {"inline_data": {"mime_type": "video/mp4", "data": video_b64}},
+            {"text": prompt},
+        ]}],
+        "generationConfig": {"response_mime_type": "application/json"},
+    }
+    for attempt in range(4):  # 503/429 are routine on larger video payloads
+        resp = requests.post(URL, params={"key": os.environ["GEMINI_API_KEY"]},
+                             json=body, timeout=120)
+        if resp.status_code not in (429, 500, 502, 503):
+            break
+        time.sleep(2 ** attempt * 5)  # 5s, 10s, 20s
     resp.raise_for_status()
     out = json.loads(resp.json()["candidates"][0]["content"]["parts"][0]["text"])
+    out.setdefault("transcript", None)
     for i, v in enumerate(out.get("variants", [])):
         v.setdefault("label", chr(ord("A") + i))
         # keep only the contract's knobs — Gemini sometimes invents keys
