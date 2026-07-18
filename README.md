@@ -66,18 +66,28 @@ Why two "backends": Base44 can't run heavy ML Python or reliably reach Atlas fro
 
 ## Team (4) — build split
 
-> ⚠️ **Being finalized.** Per-person plan files will be added to the repo as they land; this table is the living index — update it as plans are committed.
+Four parallel lanes, two frozen contracts (the **API contract** and the **Score Object**) agreed in hour 0–1 and written into `CONTRACTS.md` — after that everyone builds against mocks and nobody blocks anybody. Full detail: [`team-division.md`](team-division.md).
 
-| Person | Workstream | Plan file |
+| Lane | Owns | Interface |
 |---|---|---|
-| A — TBD | TBD | *(pending)* |
-| B — TBD | TBD | *(pending)* |
-| C — TBD | TBD | *(pending)* |
-| D — TBD | TBD | *(pending)* |
+| **A — Frontend & Design** (Base44) | Whole Base44 app: upload, voice-script form, results/winner screen, history, login, design system, pitch visuals | Consumes the API response JSON (mock first) |
+| **B — Scoring Engine** (TRIBE on Modal) | TRIBE v2 on A100, 5-network reduction, metrics, Score Object, precomputed demo scores | `score(media) -> ScoreObject` |
+| **C — Backend & Data** (FastAPI + MongoDB) | All endpoints, Mongo schema + pymongo, auth verification, orchestration — the integration hub | Defines the REST contract; calls B and D |
+| **D — Generation & Intelligence** (ElevenLabs + ffmpeg + Backboard) | Voice-A/B pipeline, Backboard LLM/memory, optional Gemini, demo dataset curation | `generate_voice_variants(...)`, `suggest(...)`, `tips(...)` |
+
+```
+A (UI)        -- calls --> C (API)
+C (API)       -- calls --> B (score)  and  D (generate)
+D (variants)  -- feeds --> B (to score)
+B (scores)    -- stored -> C (Mongo)     [precomputed demo path]
+```
+
+Integration order (last third): C swaps in B's real scorer → C swaps in D's real generators → A swaps mock API for C's real endpoints → precomputed demo scores seeded into Mongo. Riskiest lane is B (isolated on purpose); broadest is C. Per-person plan files land in the repo as written — name assignments to be added here as they're confirmed.
 
 ## Docs
 
 - [`overview.md`](overview.md) — project overview: scope, prize tracks, hackathon logistics, open decisions
+- [`team-division.md`](team-division.md) — the 4-lane split, frozen contracts, dependency map, integration order
 - [`PRD.md`](PRD.md) — product requirements: users, features, metric definition, risks
 - [`tech-architecture.md`](tech-architecture.md) — full system design, endpoints, data flow, secrets
 - [`how-tribe-v2-works.md`](how-tribe-v2-works.md) — TRIBE v2 deep-dive: pipeline, the five networks, limits, runtime
