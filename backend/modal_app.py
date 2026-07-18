@@ -60,6 +60,7 @@ def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
     from pathlib import Path
 
     from backend.scoring.face import analyze_face
+    from backend.scoring.hands import analyze_hands
     from backend.scoring.objects import detect_objects
     from backend.scoring.objective import measure_motion, measure_sharpness
     from backend.scoring.transcript import transcribe
@@ -81,6 +82,7 @@ def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
             "sharpness": measure_sharpness(path)["sharpness"],
             "clarity": safe(lambda: detect_objects(path, CACHE_DIR)),
             "face": safe(lambda: analyze_face(path, CACHE_DIR)),
+            "hands": safe(lambda: analyze_hands(path, CACHE_DIR)),
             "speech": safe(lambda: transcribe(path, CACHE_DIR)),
         }
         cache.commit()
