@@ -57,8 +57,12 @@ async def _finalize(test: dict) -> None:
 @router.post("/tests/{test_id}/score")
 async def score_test(test_id: str, user=Depends(current_user)):
     test = await get_test_or_404(test_id)
-    if len(test["variant_ids"]) < 2:
-        raise ApiError("bad_request", "need at least 2 variants to score")
+    # Single-variant tests allowed (engagement audit of one video): winner is the
+    # sole variant; with n=1 the shared scale is self-referenced, so absolute
+    # peak/sustained are self-relative — curve shape/retention/timeline remain
+    # meaningful. [D edit — C please review]
+    if len(test["variant_ids"]) < 1:
+        raise ApiError("bad_request", "need at least 1 variant to score")
 
     scored = {s["variant_id"] for s in await repo().scores_for(test)}
     unscored = [v for v in test["variant_ids"] if v not in scored]
