@@ -11,11 +11,13 @@ from backend.generation.overlay import resolve
 MODEL = "gemini-2.5-flash-lite"
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 
-PROMPT = """You are a short-form video A/B testing strategist. Watch this video (it will get an
-AI voiceover laid over it). Based on what is actually on screen — pacing of cuts, subject,
-mood, how the first 3 seconds look — propose {n} voiceover variants to test against each other.
+PROMPT = """You are a short-form video A/B testing strategist. Watch this video, including any
+existing audio/voiceover it already has. Based on what is actually there — pacing of cuts,
+subject, mood, how the first 3 seconds look, what the current audio does or fails to do —
+propose {n} voiceover variants the creator could OPTIONALLY test over this footage.
 
 Vary the axes that matter for THIS footage: script wording/hook style, delivery speed, tone.
+If the video already has a voiceover, treat it as the baseline your variants compete against.
 {context_line}
 
 Return JSON only, matching exactly:
