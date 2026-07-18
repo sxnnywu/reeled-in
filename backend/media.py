@@ -17,9 +17,17 @@ def media_root() -> Path:
 
 
 def resolve_media(media_key: str) -> Path:
-    """media_key ('media/<id>.mp4') -> absolute path under the root. Rejects traversal."""
+    """media_key ('media/<id>.mp4') -> absolute path, confined to the media/ subtree.
+
+    Rejects traversal AND anything outside <root>/media — the serve route is
+    unauthenticated (video/img tags can't send headers), so it must never be able
+    to read source files or .env under the local-dev root.
+    """
+    if not media_key.startswith("media/"):  # §7: every media_key is 'media/...'
+        raise ValueError(f"bad media_key: {media_key}")
     root = media_root().resolve()
+    media_dir = root / "media"
     path = (root / media_key).resolve()
-    if not str(path).startswith(str(root) + os.sep):
+    if not str(path).startswith(str(media_dir) + os.sep):
         raise ValueError(f"bad media_key: {media_key}")
     return path

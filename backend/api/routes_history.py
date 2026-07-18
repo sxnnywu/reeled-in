@@ -18,6 +18,7 @@ def history(user=Depends(current_user)):
             winner = {"variant_id": wid, "label": store.VARIANTS[wid]["label"]}
         tests.append({
             "test_id": t["id"],
+            "name": t.get("name"),
             "type": t["type"],
             "objective": t["objective"],
             "status": t["status"],

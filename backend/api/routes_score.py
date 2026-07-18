@@ -42,9 +42,10 @@ def score_test(test_id: str, user=Depends(current_user)):
     test = get_test_or_404(test_id)
     if len(test["variant_ids"]) < 2:
         raise ApiError("bad_request", "need at least 2 variants to score")
-    # Vary curve length slightly per variant so mock metrics differ and the winner is real.
+    # Vary curve length slightly per variant so mock metrics differ and the winner is real
+    # (floor keeps n sane for tests with many variants).
     for i, vid in enumerate(test["variant_ids"]):
-        store.SCORES[vid] = mock_score(vid, n=18 - 2 * i)
+        store.SCORES[vid] = mock_score(vid, n=max(8, 18 - 2 * i))
     test["winner_variant_id"] = _pick_winner(test)
     test["status"] = "complete"
     test["updated_at"] = now_iso()

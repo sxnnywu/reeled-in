@@ -75,6 +75,13 @@ async def _validation_error(_req, exc: RequestValidationError):
                         status_code=422)
 
 
+@app.exception_handler(Exception)
+async def _unhandled_error(_req, exc: Exception):
+    # Catch-all so even unexpected 500s keep the §9 envelope A parses.
+    return JSONResponse({"error": {"code": "internal", "message": "internal server error"}},
+                        status_code=500)
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True}

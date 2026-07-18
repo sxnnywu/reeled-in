@@ -1,8 +1,12 @@
 """ffmpeg audio mux onto a base video. Owner: D."""
+import os
 import subprocess
 from pathlib import Path
 
-MEDIA_ROOT = Path(__file__).resolve().parents[2]  # repo root; media_key paths resolve under it
+# Honors MEDIA_ROOT so all lanes share one media tree (C sets it to /cache on Modal —
+# the shared Volume B's scorer reads; PERSON_C_PLAN findings #12/#13). Local default
+# unchanged: repo root. [C edit — D please review]
+MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", Path(__file__).resolve().parents[2]))
 
 
 def resolve(media_key: str) -> Path:

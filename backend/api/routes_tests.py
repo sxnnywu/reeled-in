@@ -35,6 +35,7 @@ def create_test(body: CreateTestReq, user=Depends(current_user)):
         "id": new_id("test"),
         "user_id": user["user_id"],
         "type": body.type.value,
+        "name": body.name,  # optional user title; null -> A derives a fallback
         "objective": body.objective,
         "status": "pending",
         "variant_ids": [],

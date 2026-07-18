@@ -54,6 +54,7 @@ class Test(BaseModel):
     id: str                    # test_...
     user_id: str
     type: TestType
+    name: Optional[str] = None  # optional user-given title; null -> A derives a fallback
     objective: str = "retention"
     status: TestStatus = TestStatus.pending
     variant_ids: list[str] = Field(default_factory=list)
@@ -79,6 +80,7 @@ class WinnerRef(BaseModel):
 class TestSummary(BaseModel):
     """Lightweight per-test shape for /history (CONTRACTS §5) — no N+1 fetches."""
     test_id: str
+    name: Optional[str] = None
     type: TestType
     objective: str
     status: TestStatus
@@ -94,6 +96,7 @@ class HistoryResp(BaseModel):
 class CreateTestReq(BaseModel):
     type: TestType
     objective: str = "retention"
+    name: Optional[str] = None
 
 class VoiceSpec(BaseModel):
     """One requested voice variant (CONTRACTS §5). `script` required; rest optional."""
@@ -108,4 +111,4 @@ class VoiceVariantsReq(BaseModel):
 
 class SuggestReq(BaseModel):
     base_media_key: str
-    context: str = ""
+    context: Optional[str] = ""  # Optional: JS clients may send an explicit null

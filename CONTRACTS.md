@@ -76,10 +76,12 @@ DB = `reeled_in`. Collections are **plural snake_case**. `_id` holds the prefixe
 **`tests`**
 ```json
 { "_id": "test_...", "user_id": "usr_...", "type": "upload",
+  "name": "Summer Drop — Hook Battle",
   "objective": "retention", "status": "pending",
   "variant_ids": ["var_...", "var_..."], "winner_variant_id": null,
   "created_at": "...", "updated_at": "..." }
 ```
+`name` = optional user-given test title (string, nullable). `null` when the creator didn't name the test — A renders a derived fallback (type · objective · date).
 **`variants`**
 ```json
 { "_id": "var_...", "test_id": "test_...", "label": "A",
@@ -100,7 +102,7 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/tests` | `{ type, objective? }` | `Test` |
+| POST | `/api/tests` | `{ type, objective?, name? }` | `Test` |
 | POST | `/api/tests/{test_id}/variants` | multipart: `file`, `label`, `params?` | `Variant` |
 | POST | `/api/tests/{test_id}/base-media` | multipart: `file` | `{ media_key }` |
 | POST | `/api/tests/{test_id}/voice-variants` | `{ base_media_key, variants: [VoiceSpec] }` | `{ variants: [Variant] }` |
@@ -123,11 +125,12 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
 - **Scoring is async (async request-reply pattern):** `POST /score` returns immediately with the Test's current `status` (`scoring`, or `complete` when precomputed). **A polls `GET /tests/{test_id}` every ~1.5 s until `status` ∈ {`complete`, `failed`}** (client timeout ~60 s). Winner + scores are present once `complete`.
 - **`TestSummary`** — the lightweight per-test shape `/history` returns (avoids N+1 fetches):
   ```json
-  { "test_id": "test_...", "type": "upload", "objective": "retention",
+  { "test_id": "test_...", "name": "Summer Drop — Hook Battle", "type": "upload",
+    "objective": "retention",
     "status": "complete", "created_at": "...", "variant_count": 2,
     "winner": { "variant_id": "var_...", "label": "B" } }
   ```
-  `winner` is `null` until a winner exists.
+  `winner` is `null` until a winner exists. `name` is `null` when the test wasn't named (A derives a fallback).
 
 ## 6. Auth
 **Free-plan model (locked 2026-07-18, research-backed). Identity does NOT come from Base44's login.** Verified against Base44's own docs: the SDK exposes no way to read the user's token, `createClientFromRequest` (its token-verification helper) is Base44-backend-function-only (= Builder plan), and custom OAuth is Base44-brokered — so **an external server (C) cannot verify a Base44 user on the free plan.** Instead:
@@ -178,3 +181,4 @@ Common codes: `bad_request`, `unauthorized`, `not_found`, `scoring_failed`, `int
 - 2026-07-18 — §6 + §8 reworked for the **free-plan / courier-less** model: frontend calls the API directly from the browser; removed `BACKEND_API_KEY` (Base44 backend functions are Builder-plan-only).
 - 2026-07-18 — **Auth resolved (research-backed) — OVERRIDES the earlier "Base44 native login (Auth0 dropped)" lock.** Base44 native login is NOT externally verifiable on the free plan (SDK exposes no token accessor; `createClientFromRequest` is backend-function/Builder-only; custom OAuth is Base44-brokered) — it would have broken A↔C integration. New model: **Base44 app = Public**, **Auth0 (LOCKED)** client-side SPA SDK issues a JWT, C verifies per-request via Auth0's JWKS, CORS locks origin; **guaranteed fallback** = C-minted session JWT. Auth0 also wins the MLH Auth0 prize. Added `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` (§8); OVERVIEW / TECH_ARCHITECTURE / TEAM_DIVISION auth notes updated to match.
 - 2026-07-18 — §5: added `POST /tests/{id}/base-media` (Voice-A/B base upload → `media_key`); defined `POST /score` as async + `GET /tests/{id}` polling; `/history` now returns enriched `TestSummary` (no N+1).
+- 2026-07-18 — tests gain an **optional nullable `name`** (requested by A for Results/History titles): create body is `{ type, objective?, name? }` (§5); stored on the §4 `tests` doc; returned on `Test` and `TestSummary`. Omitted → `null`; A renders a derived fallback, so no default server-side.

@@ -31,6 +31,7 @@ def voice_variants(test_id: str, body: VoiceVariantsReq, user=Depends(current_us
             "label": spec.label or _LABELS[i % len(_LABELS)],
             # Phase 1 stub: no real mux — point at the base video so the UI can play it.
             # Phase 3: D's generate_voice_variants writes media/<variant_id>.mp4.
+            # NOTE(Phase 3): D's fn takes dicts — pass [s.model_dump() for s in body.variants].
             "media_key": body.base_media_key,
             "params": {
                 "script": spec.script,
