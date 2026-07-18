@@ -3,5 +3,5 @@
 __pycache__/
 *.pyc
 backend/.venv/
-*.mp4
 media/
+*.mp4
