@@ -18,6 +18,7 @@ CACHE_DIR = "/cache"
 # Light image for the FastAPI ASGI app (C's api()).
 image = (
     modal.Image.debian_slim()
+    .apt_install("ffmpeg")  # [C] Phase 3: D's overlay mux + gemini's ffprobe run in-api
     .pip_install_from_requirements("backend/requirements.txt")
     .add_local_python_source("backend")
 )
@@ -106,6 +107,9 @@ def api():
 
     # One media root for all lanes (PERSON_C_PLAN findings #12/#13): the shared Volume.
     os.environ.setdefault("MEDIA_ROOT", CACHE_DIR)
+    # Deployed default: real D integrations (ElevenLabs/Gemini/Backboard). Local dev
+    # defaults to stub so keyless teammates still run; override via the secret.
+    os.environ.setdefault("GENERATION_MODE", "real")
     from backend.main import app as fastapi_app
 
     return fastapi_app
@@ -194,13 +198,23 @@ def score_test_gpu(test_id: str) -> dict:
             )
 
         rows = list(d.scores.aggregate(winner_pipeline(test_id, test.get("objective", "retention"))))
+        winner_id = rows[0]["variant_id"] if rows else None
         d.tests.update_one(
             {"_id": test_id},
             {"$set": {"status": "complete",
-                      "winner_variant_id": rows[0]["variant_id"] if rows else None,
+                      "winner_variant_id": winner_id,
                       "updated_at": now_iso()}},
         )
         cache.commit()
+
+        # Phase 3: best-effort Backboard memory write (llm.tips personalizes from this).
+        os.environ.setdefault("GENERATION_MODE", "real")
+        from backend.intel import record_test_sync_safe
+
+        wire_variants = [{"id": v["_id"], "label": v["label"], "params": v.get("params", {})}
+                         for v in ordered]
+        record_test_sync_safe(test["user_id"], {"id": test_id, "objective": test.get("objective")},
+                              wire_variants, winner_id)
         return {"ok": True, "test_id": test_id, "variants_scored": len(ordered)}
     except Exception:
         d.tests.update_one({"_id": test_id},

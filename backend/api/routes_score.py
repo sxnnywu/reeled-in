@@ -14,6 +14,7 @@ import os
 
 from fastapi import APIRouter, Depends
 
+from backend import intel
 from backend.api.auth import current_user
 from backend.api.errors import ApiError
 from backend.api.routes_tests import get_test_or_404
@@ -41,12 +42,16 @@ def _spawn_gpu(test_id: str) -> None:
     fn.spawn(test_id)
 
 
-async def _finalize(test_id: str, objective: str) -> None:
-    winner = await repo().compute_winner(test_id, objective)
+async def _finalize(test: dict) -> None:
+    winner = await repo().compute_winner(test["id"], test["objective"])
     await repo().update_test(
-        test_id,
+        test["id"],
         {"status": "complete", "winner_variant_id": winner, "updated_at": now_iso()},
     )
+    # Phase 3: write the outcome into Backboard memory (best-effort, real mode only)
+    # so llm.tips() personalizes over time. Thread id persists on users.backboard_thread_id.
+    variants = await repo().variants_for(test)
+    await intel.record_test_safe(test["user_id"], test, variants, winner)
 
 
 @router.post("/tests/{test_id}/score")
@@ -60,7 +65,7 @@ async def score_test(test_id: str, user=Depends(current_user)):
 
     if not unscored:
         # Precomputed/seeded demo path — bulletproof, no GPU involved.
-        await _finalize(test_id, test["objective"])
+        await _finalize(test)
         return await get_test_or_404(test_id)
 
     if os.environ.get("SCORING_MODE", "mock") == "gpu":
@@ -76,7 +81,7 @@ async def score_test(test_id: str, user=Depends(current_user)):
         if vid in scored:
             continue
         await repo().upsert_score(test_id, mock_score(vid, n=max(8, 18 - 2 * i)))
-    await _finalize(test_id, test["objective"])
+    await _finalize(test)
     return await get_test_or_404(test_id)
 
 
@@ -84,11 +89,15 @@ async def score_test(test_id: str, user=Depends(current_user)):
 async def explain_test(test_id: str, user=Depends(current_user)):
     test = await get_test_or_404(test_id)
     scores = await repo().scores_for(test)
-    explanations = {
-        s["variant_id"]: [
-            {"t": tick["t"], "text": _CAPTION[tick["top_network"]]}
-            for tick in s["region_timeline"]
-        ]
-        for s in scores
-    }
+    explanations = {}
+    for s in scores:
+        captions = None
+        if intel.real_mode() and s["region_timeline"]:
+            captions = await intel.explain(s["region_timeline"])  # D's Backboard captioner
+        if captions is None:  # stub mode, empty timeline, or Backboard hiccup -> templates
+            captions = [
+                {"t": tick["t"], "text": _CAPTION[tick["top_network"]]}
+                for tick in s["region_timeline"]
+            ]
+        explanations[s["variant_id"]] = captions
     return {"explanations": explanations}

@@ -87,9 +87,9 @@ This is the big parallel window. No one waits on anyone (only on Phase 0).
 
 ## Phase 3 — Integration  [the sequential join · do in this order]
 The only part with hard waits. Kept short because every stub already matches CONTRACTS exactly.
-1. **[C ← B]** C swaps the stub scorer → B's real Modal `score()`.  **WAITS ON:** B's `score()` deployed & callable.
-2. **[C ← D]** C swaps the stub generator → D's real `generate_voice_variants()` + Backboard.  **WAITS ON:** D done.  *(Steps 1 and 2 are independent — can run at the same time.)*
-3. **[A ← C]** A swaps `mock_api.json` → C's real endpoints.  **WAITS ON:** C's API live with real backends (1 & 2).
+1. **[C ← B]** C swaps the stub scorer → B's real Modal `score()`.  **WAITS ON:** B's `score()` deployed & callable. ⏳ STRUCTURALLY READY — `score_test_gpu(test_id)` batch fn deployed (calls B's `score()` per variant in one session; flips on `SCORING_MODE=gpu`); waiting only on B's shared-scale port (swap happens inside that one fn).
+2. **[C ← D]** C swaps the stub generator → D's real `generate_voice_variants()` + Backboard.  **WAITS ON:** D done.  *(Steps 1 and 2 are independent — can run at the same time.)* ✅ DONE — `backend/intel.py` bridge (async routes → D's sync fns via to_thread; lazy imports; `GENERATION_MODE` real/stub gate — deployed defaults real, keyless local defaults stub). Wired + **verified live on the deployed API**: `/suggest` = real Gemini watching the video (described the test-pattern clip accurately); `/voice-variants` = real ElevenLabs reads muxed by ffmpeg onto the base (ffmpeg added to the api image), persisted + served; `/tips` + score-completion `record_test` = real Backboard memory with the thread map injected into D's pluggable store, persisted at `users.backboard_thread_id` (verified in Atlas — tips referenced the winning variant's speed); `/explain` = real Backboard captions with template fallback. Media writes `commit()` the Volume so the GPU's `reload()` sees them.
+3. **[A ← C]** A swaps `mock_api.json` → C's real endpoints.  **WAITS ON:** C's API live with real backends (1 & 2). ▶ C's side is live at `https://jaychopra05--reeled-in-api.modal.run` (persistent, Atlas-backed, real D integrations; auth in dev-fallback until AUTH0_* set; A's origin needed for ALLOWED_ORIGINS).
 4. **[C+B]** `db/seed_demo.py` loads precomputed demo scores into Mongo.  **WAITS ON:** B precompute + D dataset + C Mongo. *(Parallel with step 3.)*
 
 ## Phase 4 — Demo hardening  [parallel again]

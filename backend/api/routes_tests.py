@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from backend.api.auth import current_user
 from backend.api.errors import ApiError, not_found
 from backend.db.repo import repo
-from backend.media import resolve_media
+from backend.media import commit_media, resolve_media
 from backend.models.schemas import METRICS, CreateTestReq
 from backend.util import new_id, now_iso
 
@@ -24,6 +24,7 @@ async def _save_upload(file: UploadFile, media_key: str) -> None:
     dest = resolve_media(media_key)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(await file.read())
+    commit_media()  # writer commits so the GPU container's reload() sees it
 
 
 @router.post("/tests")

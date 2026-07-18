@@ -16,6 +16,19 @@ def media_root() -> Path:
     return Path(os.environ.get("MEDIA_ROOT", REPO_ROOT))
 
 
+def commit_media() -> None:
+    """Persist Volume writes immediately (writer commits, reader reloads) so the GPU
+    container's cache.reload() sees fresh uploads/generated media without waiting on
+    Modal's background commit. No-op off Modal (MEDIA_ROOT=/cache only there)."""
+    if os.environ.get("MEDIA_ROOT") == "/cache":
+        try:
+            from backend.modal_app import cache
+
+            cache.commit()
+        except Exception:
+            pass  # background commit still covers us
+
+
 def resolve_media(media_key: str) -> Path:
     """media_key ('media/<id>.mp4') -> absolute path, confined to the media/ subtree.
 
