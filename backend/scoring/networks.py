@@ -17,20 +17,27 @@ import numpy as np
 
 NETWORKS = ["visual", "auditory", "language", "motion", "default_mode"]
 
-# Destrieux region-name substrings -> our network. First match wins, in this
-# order, so more specific networks are listed before broader ones.
+# Destrieux region-name substrings -> our network. Checked in NETWORKS order
+# (visual first), so keywords are kept mutually specific to avoid one network
+# stealing another's regions.
+# motion = lateral occipitotemporal visual-motion cortex (hMT+/V5 vicinity).
+#   NOTE: motor cortex (pre/postcentral) was removed — it encodes body movement,
+#   not visual motion, and was making the motion system rank a high-camera-motion
+#   clip below a static one. "visual" no longer uses a bare "occipital" catch-all
+#   so it stops grabbing the lateral-occipital motion regions.
 REGION_KEYWORDS = {
     "auditory": ["temp_sup-g_t_transv", "temp_sup-plan_tempo", "temp_sup-plan_polar",
                  "temp_sup-lateral", "lat_fis"],
     "language": ["front_inf-opercular", "front_inf-triangul", "pariet_inf-supramar"],
-    "motion":   ["occipital_middle", "s_oc_middle", "oc-temp_lat", "precentral", "postcentral"],
-    "visual":   ["occipital", "cuneus", "calcarine", "lingual", "fusifor", "pole_occipital",
-                 "oc-temp_med"],
+    "motion":   ["occipital_middle", "s_oc_middle", "oc-temp_lat", "s_temporal_inf",
+                 "g_and_s_occipital_inf", "s_occipital_ant"],
+    "visual":   ["calcarine", "cuneus", "lingual", "fusifor", "pole_occipital",
+                 "oc-temp_med", "occipital_sup"],
     "default_mode": ["front_sup", "cingul-post", "precuneus", "pariet_inf-angular",
                      "g_orbital", "rectus", "cingul-ant", "front_middle"],
 }
 
-_MASK_CACHE = "/cache/network_mask.npy"
+_MASK_CACHE = "/cache/network_mask_v2.npy"  # bump on any REGION_KEYWORDS change
 
 
 def _label_to_network(label: str) -> int:

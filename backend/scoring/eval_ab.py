@@ -14,6 +14,7 @@ import numpy as np
 
 from backend.scoring import metrics
 from backend.scoring.networks import raw_networks, reduce_to_networks
+from backend.scoring.objective import measure_motion
 
 WEIGHTS = metrics.NETWORK_WEIGHTS
 DECISION_METRIC = "overall"  # pre-committed winner rule
@@ -58,10 +59,12 @@ def run_ab_eval(model, clips: dict) -> dict:
             net: round(float(np.mean([min(1.0, v / net_scale[net]) for v in rnets[name][net]])), 4)
             for net in metrics.NETWORK_WEIGHTS
         }
+        obj = measure_motion(clips[name])
         out[name] = {
             "shared": metrics.compute_metrics(shared_norm),
             "perclip": metrics.compute_metrics(perclips[name]),
             "systems": systems,  # mean shared-normalized activation per brain system
+            "objective_motion": {"mean": obj["mean_motion"], "peak": obj["peak_motion"]},
         }
     return out
 
