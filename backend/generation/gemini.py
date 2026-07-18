@@ -68,3 +68,13 @@ def suggest(base_media_key: str, context: str = "", n: int = 3) -> dict:
     for i, v in enumerate(out.get("variants", [])):
         v.setdefault("label", chr(ord("A") + i))
     return out
+
+
+if __name__ == "__main__":
+    # Run: backend/.venv/bin/python -m backend.generation.gemini [base_media_key] ["context"]
+    import sys
+    from dotenv import load_dotenv
+    load_dotenv(resolve("backend/.env"))
+    base = sys.argv[1] if len(sys.argv) > 1 else "demo/dataset/base_clip_1.mp4"
+    ctx = sys.argv[2] if len(sys.argv) > 2 else ""
+    print(json.dumps(suggest(base, context=ctx), indent=2))
