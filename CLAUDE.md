@@ -41,6 +41,10 @@ Planned `backend/` structure (owners in brackets, per the four-lane split A=fron
 
 Build order: Phase 0 freeze contracts → Phase 1 everyone builds against mocks (max parallelism) → Phase 2 real pipelines → Phase 3 integration (B→C and D→C, then C→A, then seed demo scores) → Phase 4 demo hardening. B's TRIBE `score()` is the critical path.
 
+## Progress tracking
+
+`PARALLEL_IMPLEMENTATION_PLAN.md` doubles as the team's live progress tracker. Whenever you complete (or materially advance) a task from the plan, update the plan in the same commit — mark the task done (e.g. `✅ DONE — <one-line note>` on the relevant bullet) and note any deviation from the planned approach. Keep it current continuously as code lands, not in batches.
+
 ## Project constraints worth remembering
 
 - TRIBE v2 is **CC BY-NC 4.0** — hackathon demo fine, no paid product (hence free-beta/waitlist framing).

@@ -63,7 +63,7 @@ Nothing real starts until this is done. Do it synchronously in the first ~hour.
 - **C:** provision **MongoDB Atlas** cluster; put the connection string in the shared secret store.
 - **B:** create the **Modal** app; **accept the HuggingFace LLaMA-3.2 gated license now** (do this hour 1 — it's a hard prerequisite for any text/video run); smoke-test that an A100 boots.
 - **A:** create the **Base44** project; scaffold empty screens.
-- **D:** grab 1–2 base **stock clips**; get **ElevenLabs** + **Backboard** API keys.
+- **D:** grab 1–2 base **stock clips**; get **ElevenLabs** + **Backboard** API keys. ✅ DONE — 2 placeholder clips in `demo/dataset/` (test-videos.co.uk; swap for real short-form footage in P2); ElevenLabs + Backboard + Gemini keys in local `.env`s, all verified with live calls. Gemini: use `gemini-2.5-flash-lite` (2.0-flash free quota 429s). Backboard API: `https://app.backboard.io/api`, `X-API-Key` header, `POST /threads/messages` auto-creates thread+assistant.
 - **Exit:** CONTRACTS.md frozen + committed, scaffold pushed → unlock Phase 1.
 
 ## Phase 1 — Build against mocks  [maximum parallelism · all four independent]
@@ -71,7 +71,7 @@ This is the big parallel window. No one waits on anyone (only on Phase 0).
 - **A [PARALLEL]:** `frontend/mock_api.json` (canned Score Object from CONTRACTS) → build **Upload screen**, **Voice-A/B form**, **Results screen** (all 5 network curves + composite engagement curve) wired to the mock. Needs only CONTRACTS.
 - **B [PARALLEL]:** `scoring/tribe_model.py` + a first `scoring/score.py` that returns a **real ScoreObject for one stock clip** (metrics can be rough). Needs only CONTRACTS (to match output shape). Depends on nobody.
 - **C [PARALLEL]:** `models/schemas.py` (Pydantic from CONTRACTS), `db/mongo.py`, `mocks/mock_score.py`, and all `api/routes_*` wired to **stubs** → the full API runs end-to-end on fake data. Needs only CONTRACTS.
-- **D [PARALLEL]:** `generation/voice.py` (ElevenLabs) + `generation/overlay.py` (ffmpeg) → produce 2–3 real **voice-variant files** from a stock clip; `mocks/mock_variants.py`. Needs only a stock clip.
+- **D [PARALLEL]:** `generation/voice.py` (ElevenLabs) + `generation/overlay.py` (ffmpeg) → produce 2–3 real **voice-variant files** from a stock clip; `mocks/mock_variants.py`. Needs only a stock clip. ✅ DONE — full `generate_voice_variants()` pipeline working end-to-end: 3 voices (Rachel/Adam/Josh, `eleven_multilingual_v2`) muxed onto base_clip_1 as h264+aac (`-shortest` trims to voiceover length — flip to audio-padding if equal durations wanted). `mock_variants.py` from scaffold.
 - **Exit:** A has a clickable UI on mock data; B scores one clip for real; C's API serves fake data end-to-end; D produces real voice variants.
 
 ## Phase 2 — Complete the real pipelines  [mostly parallel · first join points]
