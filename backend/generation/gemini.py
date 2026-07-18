@@ -2,6 +2,7 @@
 import base64
 import json
 import os
+import subprocess
 
 import requests
 
@@ -24,14 +25,32 @@ Return JSON only, matching exactly:
 {{"variants": [{{"label": "A", "script": "...", "voice_settings": {{"speed": 1.0}}}}, ...],
   "rationale": "2-3 sentences: what you saw in the footage and why these variants test it"}}
 
-Rules: scripts must be speakable in under 10 seconds (~25 words max). speed in [0.7, 1.2].
-Labels "A", "B", "C"... Omit voice_settings when defaults are fine. {n} variants."""
+Rules: the video is {duration:.0f} seconds long — each script must be comfortably speakable
+within it (roughly {max_words} words at normal pace). speed in [0.7, 1.2]. Labels "A", "B",
+"C"... Omit voice_settings when defaults are fine. {n} variants."""
+
+WORDS_PER_SEC = 2.5  # comfortable spoken pace
+
+
+def _duration_sec(media_key: str) -> float:
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+         str(resolve(media_key))],
+        capture_output=True, text=True, check=True,
+    )
+    return float(out.stdout.strip())
 
 
 def suggest(base_media_key: str, context: str = "", n: int = 3) -> dict:
     """-> { "variants": [VoiceSpec], "rationale": str } (CONTRACTS §5 /suggest)."""
     video_b64 = base64.b64encode(resolve(base_media_key).read_bytes()).decode()
-    prompt = PROMPT.format(n=n, context_line=f"Creator context: {context}" if context else "")
+    duration = _duration_sec(base_media_key)
+    prompt = PROMPT.format(
+        n=n,
+        duration=duration,
+        max_words=int(duration * WORDS_PER_SEC),
+        context_line=f"Creator context: {context}" if context else "",
+    )
     resp = requests.post(
         URL,
         params={"key": os.environ["GEMINI_API_KEY"]},
