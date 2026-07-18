@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from backend.api.auth import current_user
 from backend.api.errors import ApiError, not_found
-from backend.db import store
+from backend.db.repo import repo
 from backend.media import resolve_media
 from backend.models.schemas import METRICS, CreateTestReq
 from backend.util import new_id, now_iso
@@ -13,8 +13,8 @@ from backend.util import new_id, now_iso
 router = APIRouter()
 
 
-def get_test_or_404(test_id: str) -> dict:
-    test = store.TESTS.get(test_id)
+async def get_test_or_404(test_id: str) -> dict:
+    test = await repo().get_test(test_id)
     if test is None:
         raise not_found("test_id")
     return test
@@ -27,7 +27,7 @@ async def _save_upload(file: UploadFile, media_key: str) -> None:
 
 
 @router.post("/tests")
-def create_test(body: CreateTestReq, user=Depends(current_user)):
+async def create_test(body: CreateTestReq, user=Depends(current_user)):
     if body.objective not in METRICS:
         raise ApiError("bad_request", f"objective must be one of {METRICS}")
     now = now_iso()
@@ -43,7 +43,7 @@ def create_test(body: CreateTestReq, user=Depends(current_user)):
         "created_at": now,
         "updated_at": now,
     }
-    store.TESTS[test["id"]] = test
+    await repo().insert_test(test)
     return test
 
 
@@ -55,7 +55,7 @@ async def add_variant(
     params: str = Form("{}"),
     user=Depends(current_user),
 ):
-    test = get_test_or_404(test_id)
+    test = await get_test_or_404(test_id)
     try:
         params_dict = json.loads(params) if params else {}
     except json.JSONDecodeError:
@@ -71,24 +71,26 @@ async def add_variant(
         "params": params_dict,
         "created_at": now_iso(),
     }
-    store.VARIANTS[variant_id] = variant
-    test["variant_ids"].append(variant_id)
-    test["updated_at"] = now_iso()
+    await repo().insert_variant(variant)
+    await repo().update_test(
+        test_id,
+        {"variant_ids": test["variant_ids"] + [variant_id], "updated_at": now_iso()},
+    )
     return variant
 
 
 @router.post("/tests/{test_id}/base-media")
 async def upload_base_media(test_id: str, file: UploadFile = File(...), user=Depends(current_user)):
     """Voice A/B: upload the base video once -> {media_key} (CONTRACTS §5)."""
-    get_test_or_404(test_id)
+    await get_test_or_404(test_id)
     media_key = f"media/{test_id}_base.mp4"
     await _save_upload(file, media_key)
     return {"media_key": media_key}
 
 
 @router.get("/tests/{test_id}")
-def get_test(test_id: str, user=Depends(current_user)):
-    test = get_test_or_404(test_id)
-    variants = [store.VARIANTS[v] for v in test["variant_ids"] if v in store.VARIANTS]
-    scores = [store.SCORES[v] for v in test["variant_ids"] if v in store.SCORES]
+async def get_test(test_id: str, user=Depends(current_user)):
+    test = await get_test_or_404(test_id)
+    variants = await repo().variants_for(test)
+    scores = await repo().scores_for(test)
     return {"test": test, "variants": variants, "scores": scores}

@@ -4,24 +4,31 @@ One AsyncMongoClient per container (module-global, lazy), pool tuned for serverl
 small max pool, fail fast on server selection, drop idle sockets. Never create a
 client per request. Collections: users, tests, variants, scores.
 """
+import asyncio
 import os
 
 from pymongo import AsyncMongoClient
 
-_client: AsyncMongoClient | None = None
+# AsyncMongoClient binds to the event loop it was created on — cache one client
+# per loop. In production (uvicorn / Modal ASGI) there is exactly one loop, so
+# this is the single shared client; under test harnesses that spin extra loops
+# it prevents cross-loop reuse crashes.
+_clients: dict[int, AsyncMongoClient] = {}
 
 
 def db():
-    global _client
-    if _client is None:
-        _client = AsyncMongoClient(
+    loop_id = id(asyncio.get_running_loop())
+    client = _clients.get(loop_id)
+    if client is None:
+        client = AsyncMongoClient(
             os.environ["MONGODB_URI"],
             maxPoolSize=5,
             minPoolSize=0,
             serverSelectionTimeoutMS=5000,
             maxIdleTimeMS=10000,
         )
-    return _client[os.environ.get("MONGODB_DB", "reeled_in")]
+        _clients[loop_id] = client
+    return client[os.environ.get("MONGODB_DB", "reeled_in")]
 
 
 async def ensure_indexes():
@@ -34,7 +41,6 @@ async def ensure_indexes():
 
 
 async def close():
-    global _client
-    if _client is not None:
-        await _client.close()
-        _client = None
+    client = _clients.pop(id(asyncio.get_running_loop()), None)
+    if client is not None:
+        await client.close()

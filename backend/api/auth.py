@@ -47,13 +47,17 @@ def _verify(token: str) -> dict:
         raise ApiError("unauthorized", f"invalid token: {e}", 401)
 
 
-def current_user(authorization: Optional[str] = Header(None)) -> dict:
-    """FastAPI dependency -> {"user_id": "usr_...", "email": ...}."""
+async def current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """FastAPI dependency -> {"user_id": "usr_...", "email": ...}. Upserts the users doc."""
+    from backend.db.repo import repo  # local import: avoid a circular import at module load
+
     if not _auth0_enabled():
-        return {"user_id": "usr_" + "0" * 12, "email": "dev@local"}
-    if not authorization or not authorization.startswith("Bearer "):
-        raise ApiError("unauthorized", "missing bearer token", 401)
-    claims = _verify(authorization.removeprefix("Bearer "))
-    user_id = "usr_" + hashlib.sha256(claims["sub"].encode()).hexdigest()[:12]
-    # TODO(C Phase 2): upsert users doc {_id, email, display_name, created_at} in Mongo.
-    return {"user_id": user_id, "email": claims.get(EMAIL_CLAIM)}
+        user = {"user_id": "usr_" + "0" * 12, "email": "dev@local"}
+    else:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise ApiError("unauthorized", "missing bearer token", 401)
+        claims = _verify(authorization.removeprefix("Bearer "))
+        user_id = "usr_" + hashlib.sha256(claims["sub"].encode()).hexdigest()[:12]
+        user = {"user_id": user_id, "email": claims.get(EMAIL_CLAIM)}
+    await repo().upsert_user({"id": user["user_id"], "email": user["email"]})
+    return user
