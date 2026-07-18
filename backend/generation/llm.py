@@ -71,3 +71,30 @@ def tips(user_id: str) -> str:
     )
     _remember_thread(user_id, out["thread_id"])
     return out["content"]
+
+
+if __name__ == "__main__":
+    # Run: backend/.venv/bin/python -m backend.generation.llm [user_id]
+    # Stages two tests where slow "rachel" reads win, then asks for tips —
+    # the tips should echo that pattern back (proves the memory loop).
+    import sys
+    from dotenv import load_dotenv
+    load_dotenv(resolve("backend/.env"))
+    user = sys.argv[1] if len(sys.argv) > 1 else "usr_smoketest0001"
+
+    def mkv(label, params):
+        return {"id": f"var_{label.lower()}00000000000", "label": label, "params": params}
+
+    print(f"user: {user} — recording 2 staged test outcomes (slow rachel wins both)...")
+    record_test(user,
+        {"id": "test_smoke000001", "objective": "retention"},
+        [mkv("A", {"script": "Stop scrolling. Big news.", "voice_id": "rachel", "voice_settings": {"speed": 1.15}}),
+         mkv("B", {"script": "Stop scrolling. Big news.", "voice_id": "rachel", "voice_settings": {"speed": 0.9}})],
+        "var_b00000000000")
+    record_test(user,
+        {"id": "test_smoke000002", "objective": "retention"},
+        [mkv("A", {"script": "Three mistakes killing your reach.", "voice_id": "josh", "voice_settings": {"speed": 1.1}}),
+         mkv("B", {"script": "Three mistakes killing your reach.", "voice_id": "rachel", "voice_settings": {"speed": 0.85}})],
+        "var_b00000000000")
+    print("=== TIPS (should mention rachel / slower pacing) ===")
+    print(tips(user))

@@ -35,3 +35,21 @@ def explain(region_timeline: list) -> list:
         text = text[text.index("["):text.rindex("]") + 1]
     captions = json.loads(text)
     return [{"t": int(c["t"]), "text": str(c["text"])} for c in captions]
+
+
+MOCK_TIMELINE = [  # covers every caption case: hook, language, immersion high + low
+    {"t": 0, "top_network": "visual", "top_region": "fusiform_face_area", "activation": 0.85},
+    {"t": 1, "top_network": "language", "top_region": "broca_area", "activation": 0.72},
+    {"t": 2, "top_network": "auditory", "top_region": "primary_auditory", "activation": 0.55},
+    {"t": 3, "top_network": "motion", "top_region": "motion_mt", "activation": 0.68},
+    {"t": 4, "top_network": "default_mode", "top_region": "prefrontal_dmn", "activation": 0.80},
+    {"t": 5, "top_network": "default_mode", "top_region": "prefrontal_dmn", "activation": 0.15},
+]
+
+if __name__ == "__main__":
+    # Run: backend/.venv/bin/python -m backend.generation.explainer
+    # Captions the mock timeline; t=4 must read as GOOD immersion, t=5 as a warning.
+    from dotenv import load_dotenv
+    from backend.generation.overlay import resolve
+    load_dotenv(resolve("backend/.env"))
+    print(json.dumps(explain(MOCK_TIMELINE), indent=2, ensure_ascii=False))
