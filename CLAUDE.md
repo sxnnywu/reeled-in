@@ -41,12 +41,12 @@ The system is one pipeline, split across three workstreams. The full picture req
 Work is divided by workstream, not person. Each `workstreams/*/PLAN.md` lists what it owns, does not own, and its deliverable file paths. Do not modify another workstream's files; code against the contract/stub and record the dependency in your PLAN.md "Handoff Notes".
 
 - **Orchestration** — FastAPI app, spec ingestion (inline + GitHub/folder via `POST /api/specs/ingest`), fan-out controller, sandbox loop runner, instrumentation adapter, event emission, the demo loop (morning-triage 6-agent CI-triage loop, Layer 1).
-- **Data & Storage** — Mongo (Motor) setup/indexes, event collector, aggregation pipelines, failure clustering + Gemini findings, report assembly, WebSocket.
+- **Data & Storage** — MongoDB setup (PyMongo `AsyncMongoClient`), event collector, aggregation pipelines, failure clustering + Gemini findings, report assembly, WebSocket.
 - **Interface & Design** — dashboard (Base44 candidate) fleet/traffic/report views, visual design from existing templates, demo narrative. Owned by the presenter/designer; technical members assist on API wiring only.
 
 ## Planned Stack (proposed, not yet committed)
 
-Backend: Python 3.11+, FastAPI + Uvicorn, Pydantic 2.x, Motor (async MongoDB), httpx, python-dotenv. Frontend: Base44 and/or Next.js + TypeScript. LLM: Gemini. Two decisions are still open and **block** parts of the build: the **sandbox substrate** (isolation mechanism for N concurrent runs) and **push vs pull** event capture (push assumed). Do not hard-commit Orchestration code to a substrate until decided; build the loop runner substrate-agnostic.
+Backend: Python 3.11+, FastAPI + Uvicorn, Pydantic 2.x, PyMongo `AsyncMongoClient` (pymongo ≥4.9; Motor is EOL since May 2026), httpx, python-dotenv. Frontend: Base44 and/or Next.js + TypeScript. LLM: Gemini. Two decisions are still open and **block** parts of the build: the **sandbox substrate** (isolation mechanism for N concurrent runs) and **push vs pull** event capture (push assumed). Do not hard-commit Orchestration code to a substrate until decided; build the loop runner substrate-agnostic.
 
 ## Living-Docs Discipline (required every session)
 

@@ -77,7 +77,7 @@ From the confirmed stack (INTEGRATIONS_AND_STACK.md): Backboard, Pheobe, Base44,
 
 | Tool | Why it's C's | What I ship for it |
 |---|---|---|
-| **MongoDB** | The analysis IS Mongo: aggregation pipelines (Tier 1), time-series `events`, Vector Search for failure clustering | Pipelines (done), vector clustering (step 4) |
+| **MongoDB** | The analysis IS Mongo: aggregation pipelines (Tier 1), regular collection `events` (indexed, change-streamed), Vector Search for failure clustering | Pipelines (done), vector clustering (step 4) |
 | **Gemini** — analysis half | Findings narration: structured-JSON output mirroring the `Finding` model, Batch API for the analysis pass | Findings generator + report (steps 1–2). A owns the in-loop-agents half |
 
 Others: Backboard + Warp → A, Base44 → D, Pheobe → role still TBD (if it lands as observability/eval it may touch C — flag me).

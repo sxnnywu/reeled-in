@@ -10,7 +10,7 @@ Non-negotiable contract rules:
 ## Scope
 
 You own:
-- MongoDB setup (Motor), collections, indexes
+- MongoDB setup (PyMongo `AsyncMongoClient`, pymongo ≥4.9 — Motor is EOL), collections, indexes
 - Event collector (`POST /api/events`) with schema validation
 - Query routes (`/sandboxes`, `/events`) + WebSocket `/ws/runs/{run_id}`
 - Aggregation pipelines: completion rate, stall detection, iteration histogram, divergence, token/cost stats, per-handoff failure rates

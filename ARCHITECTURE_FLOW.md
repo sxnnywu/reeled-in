@@ -20,7 +20,7 @@ Loopy has two clearly separated layers. Keeping them separate resolves "whose mo
    -> POST /api/runs (N, seed strategy)
    -> Fan-out Controller provisions N sandboxes
         each sandbox: [instrumentation adapter] wraps [the Loop Under Test] -> emits Events
-   -> Collector -> MongoDB (events time-series, sandbox_runs)
+   -> Collector -> MongoDB (events collection, sandbox_runs)
    -> live: Change Streams -> WebSocket -> Dashboard
    -> on completion: Mongo aggregation (stats) + vector clustering
         -> Analysis Engine: Backboard-routed Gemini agent (with per-spec QA memory) -> Findings
@@ -43,7 +43,7 @@ flowchart TD
         FO["Fan-out Controller<br/>N sandboxes · lifecycle FSM"]
         COL["Event Collector<br/>POST /api/events · validation"]
         subgraph MDB["MongoDB Atlas"]
-            EVENTS["events (Time Series)"]
+            EVENTS["events (regular collection)"]
             RUNS["sandbox_runs · run_batches · loop_specs"]
             VEC["failure vectors (Vector Search)"]
             REP["reports"]
@@ -100,7 +100,7 @@ flowchart TD
 ### Where each platform comes into play
 | Platform | Layer | Where it plugs in | Why here |
 |---|---|---|---|
-| **MongoDB Atlas** | 2 (Loopy) | event store + stats + clustering | Time-series events; change-streams live feed; vector-search within-batch clustering |
+| **MongoDB Atlas** | 2 (Loopy) | event store + stats + clustering | Regular collection (change streams + unique index for idempotency); vector-search clustering |
 | **Gemini** | 2 (Loopy) | analysis model that writes `Finding`s | Structured JSON output, Batch API for the analysis pass; served **via Backboard** |
 | **Backboard** | 2 (Loopy) | longitudinal QA memory + analysis routing | Memory scoped per `spec_id` = trends/regressions across batches; router serves the analysis model |
 | **Base44** | 2 (Loopy) | dashboard / report viewer | Front-end; Mongo stays source of truth |
@@ -152,7 +152,7 @@ class QaMemory(BaseModel):        # NEW (Layer-2, Backboard-backed): longitudina
 - The **adapter** wraps the loop and records agent I/O (agent messages, tool calls, iterations, state updates, terminations) as `Event`s — **independent of the loop's model**. For the demo we instrument our morning-triage loop directly; the general path is an SDK/LLM-proxy adapter.
 
 ### 4. Event Capture (Layer 2)
-- Collector validates each `Event` and writes to the `events` **time-series** collection; updates `sandbox_runs`.
+- Collector validates each `Event` and writes to the `events` **regular collection** (idempotent via unique index); updates `sandbox_runs`.
 
 ### 5. Analysis (Layer 2)
 - **Deterministic first (Mongo):** aggregation pipelines compute completion rate, stall detection, iteration histogram, cost/divergence, per-handoff rates. Python does the sequence/oracle logic (stall signature, identical-seed divergence, answer-key checks).
@@ -173,9 +173,13 @@ class QaMemory(BaseModel):        # NEW (Layer-2, Backboard-backed): longitudina
 |---|---|---|---|
 | 1 | Sandbox substrate | asyncio (MVP) | build runner substrate-agnostic; don't block |
 | 2 | Event capture | push | simpler collector |
-| 3 | Events storage | time-series | ~90% compression, range queries at scale |
+| 3 | Events storage | **regular collection** | Time Series rejected: no change-stream support (breaks WS) + no unique-index support (breaks idempotency); regular collection with `(run_id, sandbox_id, seq)` unique index instead |
 | 4 | Live feed | change streams → WS | real-time, resumable |
 | 5 | **Layers** | **Layer 1 loop-under-test (model-agnostic) vs Layer 2 Loopy infra** | sponsors belong to Layer 2; don't impose our stack on the user's loop |
 | 6 | **LoopSpec** | **reference skills/connectors/model, don't re-model** | Loopy needs to run+observe, not re-implement |
 | 7 | **Backboard role** | **longitudinal QA memory per spec + analysis router** | makes Loopy stateful across runs (trends/regressions); serves Gemini |
 | 8 | Ingestion | GitHub/folder for known layouts + spec paste fallback | auto-parsing any repo is hard |
+| 9 | Async Mongo driver | **PyMongo `AsyncMongoClient`** (pymongo ≥4.9) | Motor deprecated 2025-05, EOL 2026-05; PyMongo async is MongoDB's current recommendation; same pipeline dicts |
+| 10 | Dev DB | **MongoDB Atlas** (M0/M10), shared via one `MONGODB_URI` | change streams require a replica set; standalone `mongod` breaks the WS live feed; Atlas is a replica set out of the box + it's the sponsor-track surface |
+| 11 | Ingest idempotency | unique `(run_id, sandbox_id, seq)` + `insert_many(ordered=False)`, swallow code-11000 dups | emitter is at-least-once; the index makes storage exactly-once with zero dedup bookkeeping |
+| 12 | Dashboard live data | **polling at `DASHBOARD_POLL_MS` is D's primary** (Base44 can't consume an external WS); WS is for non-Base44 clients + the change-streams demo | don't burn hours bridging Base44 to `/ws` |

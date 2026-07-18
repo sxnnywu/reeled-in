@@ -198,7 +198,7 @@ Failures are **data**, not errors (only infra failures retry). Every event carri
 **Layer 2 — Loopy's own QA infra (always ours, for any loop under test):**
 - **Gemini** — the analysis model that narrates failure clusters into `Finding`s (structured JSON, Batch API), served via Backboard.
 - **Backboard** — longitudinal QA memory scoped per `spec_id` (trends/regressions across batches) + analysis routing.
-- **MongoDB** — event store (time-series), change-stream live feed, within-batch vector clustering.
+- **MongoDB** — event store (regular collection, unique-indexed for idempotency), change-stream live feed, within-batch vector clustering.
 - **Base44** — dashboard (fleet + traffic + report).
 
 **Unifold (optional, secondary loop):** this loop has no payments; register a small payments loop for the Unifold track, which also proves Loopy is domain-agnostic. Lead with the CI-triage loop.

@@ -168,8 +168,8 @@ Work in order; each is a prereq for the next.
 - [ ] `run_batch(batch: RunBatch, spec: LoopSpec) -> None` (FastAPI background task)
 - [ ] Spawn `n_sandboxes` asyncio tasks, each calling `run_sandbox`
 - [ ] Lifecycle FSM per sandbox: `pending -> provisioning -> running -> {completed | failed | stalled | timed_out}`
-- [ ] Write each state transition to `sandbox_runs` in Mongo
-- [ ] Mark `RunBatch.state = "completed"` (or `"failed"`) when all sandboxes finish
+- [ ] Write **active** state transitions to `sandbox_runs`: A creates the doc (`state=pending`) and updates through `running`. **Terminal state fields (`state`, `termination_reason`, `ended_at`, `total_tokens`, `iterations`) are written by B's collector when it processes `termination` events — do NOT double-write these from the fan-out controller.**
+- [ ] Mark `RunBatch.state = "completed"` (or `"failed"`) when all sandboxes finish — coordinate with B on who fires this (recommend: A's background task polls sandbox_runs counts via a Mongo query when all tasks return)
 - [ ] Seed strategy:
   - `"identical"` — all sandboxes get the same `seed_input` object. **Identical `seed_input` = control group for C's divergence metric. This is a contract. Enforce it exactly.**
   - `"varied"` — rotate through the morning-triage archetype library (~10 incident archetypes)

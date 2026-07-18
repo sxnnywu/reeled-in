@@ -142,7 +142,7 @@ in build order:
 
 ## 8. What D needs from others
 
-- **A (Orchestration):** fleet state-counts shape in `GET /api/runs/{run_id}`; confirm what "live traffic" means on screen (sampled, not full stream). Which demo loop is canonical — the 6-agent CI-triage (what C already has numbers for) or `example-loops/morning-triage.md`? **The demo script's failure-moment depends on this** (open conflict flagged in `STATUS.md`).
+- **A (Orchestration):** fleet state-counts shape in `GET /api/runs/{run_id}`; confirm what "live traffic" means on screen (sampled, not full stream). ~~Which demo loop is canonical?~~ **Resolved: `example-loops/morning-triage.md` IS the 6-agent CI/CD triage loop** — same loop, different naming. `backend/examples/ci_triage_spec.json` is its LoopSpec. C's verified numbers (§4) are for this loop. Demo script is unblocked.
 - **B (Data-Capture):** WebSocket vs polling shape; the `/sandboxes` and `/events` query routes live so polling works; sampled-traffic payload shape.
 - **C (Analysis):** **report JSON sign-off before I build the report view** — `Report` in `SHARED_CONTRACTS §3` + the `stats` dict shape from `pipelines.compute_stats`. C's current numbers (§4) are what I design the report cards around.
 
@@ -151,7 +151,7 @@ in build order:
 - **Don't block on live data** — every view is built on fake contract-shaped data first, so D is never waiting on a real endpoint.
 - **Base44 real-time ≠ external socket** (researched) — lead with polling; don't burn hours trying to consume `/ws` directly.
 - **Don't restyle mid-build** — templates are final.
-- **Demo loop still contested** — build the report/fleet views **loop-agnostic** (render whatever the `Report`/`SandboxRun` contains); only the spoken script names the specific "nodding evaluator" moment, so it's cheap to re-point if the team picks morning-triage.
+- **Demo loop resolved** — morning-triage.md = the 6-agent CI-triage loop = what C already has numbers for. Build views loop-agnostically (they render whatever `Report`/`SandboxRun` contains), which is already the plan.
 - **Live TTS is risky on stage** — pre-render the ElevenLabs clip.
 - **If B's WebSocket is late** — polling `GET /api/runs/{run_id}` at `DASHBOARD_POLL_MS` is the plan, not a downgrade.
 

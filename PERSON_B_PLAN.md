@@ -27,8 +27,11 @@ Mongo and *out* to the dashboard in real time.
 - Dashboard UI → **D**
 
 **B's superpower: loop-agnostic.** B stores/forwards whatever contract-shaped events
-arrive. The morning-triage-3-agent vs CI-triage-6-agent demo-target debate (see STATUS
-handoff) **does not block B** — the `Event` shape is identical either way.
+arrive. The `Event` shape is the same regardless of the loop topology.
+
+> **Note:** "morning-triage" and "CI/CD failure-triage" are the **same 6-agent loop** —
+> `example-loops/morning-triage.md` defines it; `backend/examples/ci_triage_spec.json`
+> implements it. There is no naming conflict. B is unblocked.
 
 ---
 
@@ -140,8 +143,8 @@ tune batch-flush timing with A so the feed isn't laggy.
   settled or C's math has no inputs. (This is the plan's open item "who marks a RunBatch complete.")
 - A's `main.py` must call B's `database.connect()` in the FastAPI **lifespan** (one client
   per process; never per-request; never share across event loops).
-- **Store `payload` verbatim** — C's Tier-2 reads keys *inside* it (`payload.verdict=="pass"`,
-  `payload.must_pass_ok`, `payload.classified`). B must not strip/rename payload.
+- **Store `payload` verbatim** — C's Tier-2 reads keys *inside* it (`payload.verdict=="PASS"`,
+  `payload.must_pass_ok`, `payload.classified`). B must not strip/rename payload. Note: `verdict` is uppercase `"PASS"`/`"REJECT"` (matches A's emitter and the morning-triage spec).
 - Confirm event **batch flush timing** (`EVENT_BATCH_SIZE=25`) so the live feed isn't laggy.
 
 **← C (Analysis):** C swaps her local Mongo handle for B's `get_db()` (one line). C reads
@@ -158,8 +161,8 @@ msg, traffic-feed msg) before D wires live views. Poll fallback contract is `GET
 |---|---|---|
 | **MongoDB Atlas (MLH)** — infra half | The whole ingest+live layer: current async driver (`AsyncMongoClient`), **idempotent bulk ingest** via unique index, index design, and **Change Streams → WebSocket** for a real-time (not polled) feed. C owns the analytics half (aggregation + Vector Search). Together = "we used Atlas well beyond CRUD." | database.py, collector, ws.py |
 
-Not B's: Gemini/Backboard/Warp/Unifold (A), Base44/Auth0/ElevenLabs (D), analytics-side
-Mongo + Solana (C). Rule holds: **declare only what's actually wired.**
+Not B's: Gemini/Backboard/Warp/Unifold (A), Base44/ElevenLabs (D), analytics-side
+Mongo (C). Rule holds: **declare only what's actually wired.** (Solana was cut Jul 17.)
 
 ---
 

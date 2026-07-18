@@ -121,7 +121,7 @@ Hours are relative to build start (H0 = 9:30 PM Fri). Bands are approximate; the
 Three standing 5-minute syncs prevent silent contract drift:
 
 1. **Orchestration ↔ Data (H1, then H8):** event batch flush timing; who marks a `RunBatch` complete; validation-error policy (reject batch vs drop event).
-2. **Data ↔ Interface (H2, then H10):** WebSocket message shapes; report JSON final before D wires the report view.
+2. **Data ↔ Interface (H2, then H10):** D's polling contract (routes + shapes D polls at `DASHBOARD_POLL_MS`); report JSON final before D wires the report view. (WS shapes only matter if D adopts the optional WS bridge — see PERSON_D_PLAN §5.)
 3. **Orchestration ↔ Interface (H2):** fleet state-counts shape in `GET /api/runs/{run_id}`; what "live traffic" means on screen (sampled, not full stream).
 
 **The cardinal rule (from `TEAM_DIVISION.md`):** no one changes a field name, signature, route path, or collection name without updating `SHARED_CONTRACTS.md` first, then announcing, then coding. A silent rename breaks someone else's code invisibly.
@@ -131,7 +131,7 @@ Three standing 5-minute syncs prevent silent contract drift:
 ## 7. Contingencies
 
 - **If A is behind on the real runner at H20:** demo on the fake emitter. It emits contract-shaped events, so B/C/D can't tell the difference — the QA story still lands. (This is the whole reason the fake emitter exists.)
-- **If B's WebSocket is late:** D falls back to polling `GET /api/runs/{run_id}` at `DASHBOARD_POLL_MS`. The contract already anticipates this.
+- **B's WebSocket is not on D's critical path:** D's dashboard is Base44, which cannot subscribe to an external WebSocket — **polling at `DASHBOARD_POLL_MS` is D's primary live-data mechanism by design** (see PERSON_D_PLAN §5). B's WS still ships (it's the change-streams demo surface for the MongoDB track and any non-Base44 client), but D is never blocked on it.
 - **If C's Gemini findings are flaky:** ship deterministic stats + one hand-templated finding narration. Per the contract risk note — *math decides, the LLM only narrates.* The demo survives without the LLM layer.
 - **If someone finishes early:** float to the critical path — help A scale the fan-out, or help C on per-handoff analysis, or pair with D on wiring.
 
@@ -144,7 +144,7 @@ Three standing 5-minute syncs prevent silent contract drift:
 These map to Hack the 6ix tracks and mostly fall out of the architecture already:
 
 - **Backboard** — two roles, both core: (1) Layer-1 demo loop state-file memory per sandbox_id (A); (2) Layer-2 Loopy longitudinal QA memory per spec_id + analysis routing that serves Gemini (C). ✔
-- **MongoDB (MLH)** — event store (time-series) + aggregations + vector clustering (already core). ✔
+- **MongoDB (MLH)** — event store (regular collection, change-streamed for live feed) + aggregations + vector clustering (already core). ✔
 - **Gemini (MLH)** — two roles, both core: (1) Layer-1 demo loop agents (A); (2) Layer-2 analysis model that narrates failure clusters into Findings, served via Backboard (C). ✔
 - **Warp** — drive the sandbox fleet ops from the agentic terminal; document it in the demo. ✔
 - **Base44** — the dashboard/report viewer (if chosen in Phase 0). ✔

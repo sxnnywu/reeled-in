@@ -61,7 +61,7 @@ DEFAULT_SANDBOX_TIMEOUT_S = 300
 DEFAULT_FLEET_SIZE_MVP = 50
 STALL_WINDOW = 5          # iterations with no state progress = stalled
 EVENT_BATCH_SIZE = 25     # events per collector POST
-DASHBOARD_POLL_MS = 2000  # if polling; WebSocket preferred
+DASHBOARD_POLL_MS = 2000  # D's primary live-update mechanism (Base44 polls; can't subscribe external WS); WS is enhancement-only
 ```
 
 ## 3. Core Document Shapes (Pydantic — mirror exactly in TS)
@@ -167,7 +167,7 @@ class QaMemory(BaseModel):
 | `loop_specs` | LoopSpec | `spec_id` unique |
 | `run_batches` | RunBatch | `run_id` unique |
 | `sandbox_runs` | SandboxRun | `(run_id, sandbox_id)` unique |
-| `events` | Event | **time-series** (timeField `ts`, metaField `{run_id, sandbox_id}`); plus `(run_id, sandbox_id, seq)`, `(run_id, type)` |
+| `events` | Event | `(run_id, sandbox_id, seq)` unique; `(run_id, type)`; `(run_id, sandbox_id)` — **regular collection** (Time Series disabled: no change-stream support + no unique-index support, both load-bearing) |
 | `reports` | Report | `run_id` unique |
 
 Naming rule: it is `run_id` everywhere. Never `batch_id`, never `run_batch_id`.

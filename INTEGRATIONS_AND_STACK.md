@@ -34,7 +34,7 @@ Rule: each confirmed integration gets its role, owner workstream, and required e
 | Python 3.11+ | Runtime |
 | FastAPI + Uvicorn | REST API + WebSocket for live fleet updates |
 | Pydantic 2.x | Event/loop-spec validation (mirrors `SHARED_CONTRACTS.md`) |
-| Motor (async MongoDB driver) | Event store access |
+| PyMongo `AsyncMongoClient` (pymongo ≥4.9) | Event store access — Motor was deprecated 2025-05-14, EOL 2026-05-14; use `pymongo.AsyncMongoClient` directly (same aggregation-pipeline dicts, `await` call sites) |
 | httpx | Async calls to Gemini/Backboard/etc. |
 | python-dotenv | Env management |
 
