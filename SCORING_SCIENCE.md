@@ -121,10 +121,13 @@ From the engagement curve `E` (one value per second):
 engagement and to drop-off). `peak` is a reasonable "hook strength" proxy. `overall`'s
 0.5/0.3/0.2 split is a design choice, not a measured constant.
 
-**Scope note:** `overall` is a **comparison-only** number — it exists to rank one variant
-against another in an A/B test. It is **not** shown as a single video's grade (see §6). For
-a lone clip, the meaningful outputs are the per-system curves and the region timeline, not
-a composite score.
+**Scope note (important correction):** `peak`/`sustained`/`retention`/`overall` are legacy
+composite numbers. They are fine as *descriptive stats of the engagement curve*, but they
+are **NOT the basis for the A/B comparison winner.** A comparison is decided by comparing
+the two videos across the **real signals we measure** — the 5 brain networks **plus** the
+observable production signals (facial expression, hand gestures, speech rate, motion, etc.)
+— each of which has its own published engagement evidence. See **§7**. And none of these
+appear as a single video's grade (see §6).
 
 ---
 
@@ -184,8 +187,44 @@ response predicts more engagement, with the citations. The ranking is only credi
 research behind it is shown alongside it.
 
 **Frontend implication (Person A):** single-video results screen = profile (systems +
-where + curves), no grade. Comparison results screen = winner + per-system breakdown + an
-inline "why this ranking" panel drawn from `SCORING_SCIENCE.md`.
+where + curves), no grade. Comparison results screen = winner + per-**signal** breakdown
+(the §7 signals, not peak/sustained/retention/overall) + an inline "why this ranking" panel
+drawn from this doc.
+
+---
+
+## 7. Comparison mode ranks on the REAL signals — with evidence for each
+
+When two videos are compared, the winner is decided by comparing them across the observable
+signals we actually measure. `peak`/`sustained`/`retention`/`overall` are **not** the basis.
+Two families of signal, each with published backing:
+
+**A. Predicted neural response — the 5 brain networks (TRIBE).** Covered in §1–3:
+neuroforecasting + ISC say a stronger, more *reliable* neural response, especially in the
+meaning / visual / language systems, predicts population engagement.
+
+**B. Observable production signals (model-free, measured from the pixels + audio).** Each
+maps to a separate behavioral literature:
+
+| Signal we measure | What it is | Evidence it relates to engagement | Source |
+|---|---|---|---|
+| **facial expression** (smile, mouth-open, brows) | affect on the creator's face | facial/smile responses predict ad liking + purchase intent at scale; facial coding predicts ad & brand effects | McDuff & el Kaliouby [18]; Frontiers 2023 [19] |
+| **hand gestures** | gesture presence + motion | gesturing raises persuasion, attention and communication quality | *J. Marketing Research* 2025 [20]; UBC 2025 [21] |
+| **speech rate / vocal expressiveness** ("language volume") | words/sec + prosody | prosodic / vocal expressiveness predicts affective engagement in video | Frontiers 2025 [22]; IEEE TCSS [23] |
+| **motion / cuts / pacing** | movement + edit density | scene cuts and visual complexity drive attention; on short-form, cut style shapes likes vs. completion — and *too much* pacing hurts sustained engagement | *JAMS* 2025 [24]; short-form jump-cut study [25] |
+| **visual clarity / sharpness** | focus vs. blur | quality gate (blur = harder to process); weak *direct* engagement evidence — treat as a clarity check, not an engagement driver |
+
+**The honest nuance (from [25]): more is not better.** In a controlled short-form study,
+higher pacing *reduced* sustained engagement, and the best cut style depended on the goal
+(seamless cuts → likes; moderate overlapping cuts → completion). So "video A moved more" is
+a *fact about the video*, not automatically a point in its favour — the same
+"stimulus ≠ better" principle from single-video mode, applied per signal.
+
+**How the winner is decided, and how to show it:** compare the two videos signal-by-signal,
+surface the per-signal deltas (which signals separated them), and show the winner with the
+evidence above inline. The weighting across signals is — like the network weights — a
+literature-informed prior until it is fit to real outcome data (watch-time, or human A/B
+labels). Say that; don't present the blend as a measured constant.
 
 ---
 
@@ -208,3 +247,13 @@ inline "why this ranking" panel drawn from `SCORING_SCIENCE.md`.
 15. **The surprising role of the default mode network in naturalistic perception** (2020, *Communications Biology*) — https://www.nature.com/articles/s42003-020-01602-z
 16. Kanwisher, McDermott, Chun (1997, *Journal of Neuroscience*). **The Fusiform Face Area.** — https://www.jneurosci.org/content/17/11/4302
 17. Attentional capture by faces (faces capture attention even when task-irrelevant) — https://pmc.ncbi.nlm.nih.gov/articles/PMC1857737/
+18. McDuff, el Kaliouby et al. **Predicting Ad Liking and Purchase Intent: Large-scale Analysis of Facial Responses to Ads** (*IEEE Trans. Affective Computing*) — https://www.semanticscholar.org/paper/02da25583f429cb050df61c2ffed7cd1e9a887ca
+19. **Automatic facial coding predicts self-report of emotion, advertisement and brand effects elicited by video commercials** (2023, *Frontiers in Neuroscience*) — https://www.frontiersin.org/journals/neuroscience/articles/10.3389/fnins.2023.1125983/full
+20. **Talking with Your Hands: How Hand Gestures Influence Communication** (2025, *Journal of Marketing Research*) — https://doi.org/10.1177/00222437251385922
+21. UBC (2025). **Talk with your hands to be more persuasive** — https://news.ubc.ca/2025/11/talk-with-your-hands-to-be-more-persuasive/
+22. **Predicting affective engagement and mental strain from prosodic speech features** (2025, *Frontiers in Psychiatry*) — https://www.frontiersin.org/journals/psychiatry/articles/10.3389/fpsyt.2025.1656292/full
+23. **Dual-Model Prediction of Affective Engagement and Vocal Attractiveness From Speaker Expressiveness in Video Learning** (*IEEE Trans. Computational Social Systems*) — https://doi.org/10.1109/tcss.2026.3675249
+24. **The dynamic effects of visual complexity and scene cuts on viewer attention** (2025, *Journal of the Academy of Marketing Science*) — https://link.springer.com/article/10.1007/s11747-025-01137-x
+25. Dost & Huang (2026). Short-form jump-cut style × transition frequency on TikTok engagement (seamless→likes; overlapping→completion; higher pacing reduces sustained engagement) — https://archives.marketing-trends-congress.com/2026/pages/PDF/paper_professor_DOST_HUANG.pdf
+
+*(Sources 3–17 from Exa neural search + direct publisher fetches; 18 confirmed via Apify rag-web-browser; 18–25 from Exa. Verify author lists/years before formal citation.)*
