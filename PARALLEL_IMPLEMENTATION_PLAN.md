@@ -86,7 +86,7 @@ Hours are relative to build start (H0 = 9:30 PM Fri). Bands are approximate; the
 - **All:** 20–30 min at a whiteboard to lock the `TODO(lock)` items in `SHARED_CONTRACTS` (topology edge `{from_agent, to_agent, condition}`, termination `{max_iterations, goal_check}`, `seed_strategy` = `"identical" | "varied"`). Commit stubs. **Freeze the contract.**
 - **A + B:** split API-key provisioning so it's done in parallel — A grabs Gemini + Backboard, B stands up Mongo Atlas + URI. Everyone pulls a working `.env`.
 - **A:** decide substrate = "asyncio for MVP" and log it in the ARCHITECTURE decisions table so no one re-litigates it.
-- **D:** confirm Base44 vs Next.js for the dashboard; log it.
+- **D:** confirm Base44 vs Next.js for the dashboard; log it. Then smoke-test the Base44 CLI code-sync path (`base44 eject`) against the fresh dashboard app — see §9.
 
 ### Phase 1 — Unblockers first (H1–H3)
 - **A:** commit scaffold + shared models module + route shells → then **build the fake emitter** and point it at B's collector. *(A intentionally delays the real runner until the team is unblocked.)*
@@ -152,3 +152,33 @@ These map to Hack the 6ix tracks and mostly fall out of the architecture already
 - **ElevenLabs** — voice narration of the report + a voice-agent example loop (D, nice-to-have). ◐
 
 Declare only what you actually wire. Over-declaring incoherent tracks costs you on the technical-difficulty axis.
+
+---
+
+## 9. Dev tooling & getting Base44 code into this repo
+
+### Who uses what
+
+| Person | Primary tool | Why |
+|---|---|---|
+| **A, B, C** | **Warp** (agentic terminal) | Backend work lives in this repo; Warp drives scaffolding, fleet ops, testing, and git — and documenting this workflow IS the Warp sponsor track (§8). |
+| **D** | **Base44 editor + Base44 CLI** | Dashboard is vibe-coded in the Base44 editor; the CLI is how its code gets into this repo (below). |
+
+### Base44 → repo code sync (D owns this)
+
+We do NOT have the Builder plan, so Base44's GitHub 2-way sync and ZIP export are unavailable. Instead, D uses the **Base44 CLI** (free, official, beta — `npm i -g base44@latest`, Node ≥20.19) to pull the dashboard code locally and commit it into this repo under `dashboard/`:
+
+```
+base44 login
+base44 eject --app-id <dashboard-app-id> --path ./dashboard-eject --yes
+# copy the frontend code into the repo
+rsync -a --delete dashboard-eject/src/ dashboard/src/
+git add dashboard/ && git commit
+```
+
+Rules for this workflow:
+- **`dashboard/` in this repo is a mirror, not a source of truth.** All dashboard edits happen in the Base44 editor; the repo copy exists for submission (public repo requirement), review, and backup. Never hand-edit `dashboard/` — the next eject overwrites it.
+- **Sync cadence:** D ejects + commits at every phase boundary (end of Phase 1, 2, 3) and before the Devpost submission. More often is fine; less is not.
+- **Caveats:** `eject` creates a fork with a NEW Base44 app id and an empty Base44-side database — that's fine, we only want the code; the live demo app keeps running unchanged. The `@base44/sdk` calls in the ejected code only run against Base44's servers — also fine, the repo copy is not what we deploy.
+- **Fallback if `eject` is plan-gated in practice:** script `base44 sandbox ls` + `base44 sandbox read` to pull files individually (also free, works per-file), or worst case the editor's "See all files" manual copy.
+- **Verify at H0 (Phase 0, D):** run `base44 eject` against the freshly created dashboard app as a 5-minute smoke test. If it fails on our plan, fall back to the sandbox-read script — decide this at H0, not at hour 30.
