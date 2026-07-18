@@ -35,11 +35,12 @@ Short-form video has too many creative variables and no cheap pre-publish signal
 - **Voice A/B** test type (script -> ElevenLabs reads -> overlay -> score).
 - **Scoring engine:** TRIBE -> 5 networks -> peak / sustained / retention-to-CTA metrics.
 - **Results screen:** winner call, per-network bars, engagement-over-time curve, plain-English summary (Backboard).
+- **Brain animation:** side-by-side video + a per-second brain-frame flipbook lighting up the engaged regions, with an **AI explainer** captioning what each moment means ("your brain is locking onto a face — good hook").
 - **Login + history** (Base44 auth, Mongo store), Backboard memory for personalized tips.
 
 **Stretch**
 - Video-editing auto-generation (music swap -> reorder -> pacing).
-- 3D brain visualization synced to the video.
+- Live **interactive 3D** brain (rotatable, rendered in-browser) instead of the precomputed flipbook.
 - "Act on the winner" (schedule/post) — deliberately deferred (the Phoebe-shaped scope creep we're avoiding).
 
 ## What "winner" means (metric definition)

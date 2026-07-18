@@ -33,7 +33,7 @@ Last updated: 2026-07-18. Companion to `OVERVIEW.md` and `PRD.md`.
 ## Components in detail
 
 ### 1. Base44 — frontend + auth
-Owns: upload screen, the voice-script form, the results/winner screen, and login (Base44 native auth). Calls the FastAPI backend over HTTPS with the logged-in user's token. A thin Base44 backend function can act as a secure courier (holds the API key server-side) so no secret touches the browser.
+Owns: upload screen, the voice-script form, the results/winner screen (including the **side-by-side player**: video + brain-frame flipbook synced per second + the live explainer caption), and login (Base44 native auth). Calls the FastAPI backend over HTTPS with the logged-in user's token. A thin Base44 backend function can act as a secure courier (holds the API key server-side) so no secret touches the browser.
 
 ### 2. FastAPI on Modal — the Python backend
 The orchestrator; where all real logic and secrets live. Runs as a Modal ASGI web endpoint (CPU, cheap, scale-to-zero) that invokes the GPU function only when scoring is needed.
@@ -46,13 +46,13 @@ Endpoints (rough):
 Responsibilities: variant handling, calling the GPU scorer, the 5-network reduction + metric computation, Mongo persistence, Backboard + ElevenLabs calls.
 
 ### 3. Modal GPU function — TRIBE v2 scoring
-A100 40GB function that loads TRIBE + the three encoders (weights cached on a Modal volume; keep_warm during judging). Input: a video/audio/text variant. Output: (n_timesteps x ~20k vertices) -> reduced to 5 network time-series. **Demo strategy: precompute** all demo variants' scores into Mongo ahead of time so the live pitch never waits on a cold GPU; keep one live path for the "score a fresh one" flourish.
+A100 40GB function that loads TRIBE + the three encoders (weights cached on a Modal volume; keep_warm during judging). Input: a video/audio/text variant. Output: (n_timesteps x ~20k vertices) -> reduced to 5 network time-series, plus a **brain-frame flipbook** (one PNG per second, rendered with nilearn/pycortex) and a **region_timeline** (top region/network per second). **Demo strategy: precompute** all demo variants' scores into Mongo ahead of time so the live pitch never waits on a cold GPU; keep one live path for the "score a fresh one" flourish.
 
 ### 4. MongoDB Atlas — data
 Collections (draft): `users`; `tests` (owner, type, created_at); `variants` (test_id, media ref, params); `scores` (variant_id, 5 network series, metrics, winner flag). Accessed only from FastAPI via pymongo — never from Base44 directly.
 
 ### 5. Backboard — LLM + memory/RAG
-Two jobs: (a) suggest hook/CTA/copy variants; (b) RAG over a creator's past tests so recommendations personalize over time ("your face-first hooks spike visual+DMN — do it again"). Called from FastAPI.
+Three jobs: (a) suggest hook/CTA/copy variants; (b) RAG over a creator's past tests so recommendations personalize over time ("your face-first hooks spike visual+DMN — do it again"); (c) the **brain-animation explainer** — turns B's region_timeline into plain-English per-second captions ("your brain is locking onto a face — good hook"). Called from FastAPI.
 
 ### 6. ElevenLabs — voice-variant generation
 Voice A/B flow: creator submits a voiceover/CTA script -> FastAPI calls ElevenLabs for N reads (different voices/tone/pace) -> each read is muxed onto the base video via ffmpeg (simple audio swap) -> each variant scored by TRIBE (drives auditory/language/default-mode). The only auto-generation in the MVP.
@@ -63,6 +63,8 @@ Gemini: one direct call (e.g. copy suggestions) to claim the MLH Gemini prize if
 ## The scoring pipeline (what "winner" means)
 Per variant: TRIBE -> 5 network time-series (visual, auditory, language, motion, default-mode) -> metrics: **peak** engagement, **sustained** engagement (area under curve), and **retention through the CTA** (does engagement hold to the end vs collapse). Winner = highest composite on the objective the creator picks (e.g. "hold attention to the CTA"). Caveats: activation != outcome; ~1 Hz temporal smoothing (see overview).
 
+The same per-second predictions feed the **brain animation**: each second's ~20k-vertex map is rendered to a brain PNG (`brain_frames`, the flipbook) and reduced to a top-region label (`region_timeline`); D's explainer narrates it. Rendering is ~1 Hz — the frontend interpolates between frames for smooth playback.
+
 ## Security / secrets
 All API keys (Modal, Mongo, Backboard, ElevenLabs, Gemini) live server-side in the Python backend (and/or a Base44 backend-function secret store). The browser never sees a secret. That is the only reason the Base44 "courier" function exists.
 
@@ -72,7 +74,7 @@ All API keys (Modal, Mongo, Backboard, ElevenLabs, Gemini) live server-side in t
 | Base44 | Frontend + auth + the launch/validate story ($2k) |
 | ElevenLabs | Voice-variant generation (Voice A/B) |
 | MongoDB Atlas | System of record (via pymongo) |
-| Backboard | LLM + memory/RAG layer |
+| Backboard | LLM + memory/RAG layer + the brain-animation explainer |
 | Gemini (opt) | One direct copy-suggestion call |
 | Auth0 (opt) | Login (vs Base44 native) |
 | TRIBE (ours) | Modal GPU pipeline — the technical-difficulty core |

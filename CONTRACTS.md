@@ -23,6 +23,7 @@ Last updated: 2026-07-18.
 - **Test types:** `upload`, `voice`.
 - **Test status:** `pending`, `scoring`, `complete`, `failed`.
 - **Objective** (which metric decides the winner): one of the metric keys; default `retention`.
+- **Brain regions** (for the animation; snake_case, each maps to a network): `primary_visual` & `fusiform_face_area` (visual), `motion_mt` (motion), `primary_auditory` (auditory), `broca_area` (language), `prefrontal_dmn` (default_mode). B may extend this list here.
 - **Constants:** `SAMPLE_RATE_HZ = 1`, `DB_NAME = "reeled_in"`, `API_BASE = "/api"`. `NETWORKS` and `METRICS` are the ordered lists above.
 
 ## 3. The Score Object (the most important shape)
@@ -38,6 +39,11 @@ The canonical payload **B produces, C stores, A renders.** Exact shape:
     "default_mode": [0.0, 0.08, 0.15]
   },
   "metrics": { "peak": 0.82, "sustained": 0.61, "retention": 0.74, "overall": 0.70 },
+  "brain_frames": ["media/var_1a2b3c4d5e6f_brain_000.png", "media/var_1a2b3c4d5e6f_brain_001.png"],
+  "region_timeline": [
+    { "t": 0, "top_network": "visual",   "top_region": "fusiform_face_area", "activation": 0.82 },
+    { "t": 1, "top_network": "language", "top_region": "broca_area",         "activation": 0.55 }
+  ],
   "duration_sec": 18.0,
   "sample_rate_hz": 1
 }
@@ -47,6 +53,8 @@ Rules:
 - All array values and all metrics are floats in **[0,1]**, higher = more engagement. Already normalized by B — **A does not re-normalize.**
 - `metrics.overall` = B's composite (documented in `scoring/metrics.py`); `retention` = engagement sustained through the final third (the CTA window).
 - Missing/failed score → the variant's score is `null` and the test carries `status: "failed"`; A must handle null.
+- `brain_frames`: one rendered brain PNG per second (media_keys, ordered t=0..N) for the flipbook; same length as the network arrays. Produced by B (nilearn/pycortex).
+- `region_timeline`: one entry per second, aligned to `brain_frames` and the network arrays. `top_network` ∈ NETWORKS, `top_region` ∈ the region list (§2), `activation` a float [0,1]. **Data only, from B** — the plain-English captions come from D's explainer (see §5 `/explain`).
 
 ## 4. Entities / MongoDB collections
 DB = `reeled_in`. Collections are **plural snake_case**. `_id` holds the prefixed string ID.
@@ -90,6 +98,7 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
 | GET  | `/api/history` | — | `{ tests: [Test] }` |
 | POST | `/api/suggest` (opt) | `{ context }` | `{ suggestions: [string] }` |
 | GET  | `/api/tests/{test_id}/tips` (opt) | — | `{ tips: string }` |
+| POST | `/api/tests/{test_id}/explain` | — | `{ explanations: { "<variant_id>": [ { "t": int, "text": string } ] } }` |
 
 - `Test`, `Variant`, `ScoreObject` are exactly the shapes in §3–§4.
 - The winner is decided by the test's `objective`; the backend sets `winner_variant_id` at score time.
@@ -126,3 +135,4 @@ Common codes: `bad_request`, `unauthorized`, `not_found`, `scoring_failed`, `int
 
 ## 10. Change log
 - 2026-07-18 — initial contract drafted (A/B/C/D to ratify in Phase 0 before freezing).
+- 2026-07-18 — brain-animation feature: Score Object gains `brain_frames` + `region_timeline`; added region vocabulary (§2) and `POST /explain` (§5).

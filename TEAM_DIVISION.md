@@ -15,13 +15,13 @@ After this, everyone codes against mocks.
 ## The four lanes
 
 ### Person A — Frontend & Design (Base44)   [you]
-- **Owns:** the whole Base44 app — upload screen, Voice-A/B script form, results/winner screen (per-network bars + engagement-over-time curve), history view, login (Base44 auth), the design system, and the demo/pitch visuals.
+- **Owns:** the whole Base44 app — upload screen, Voice-A/B script form, results/winner screen (per-network bars + engagement-over-time curve), the side-by-side player (video + brain-frame flipbook synced per second + live explainer caption), history view, login (Base44 auth), the design system, and the demo/pitch visuals.
 - **Does NOT own:** any scoring, data, or generation logic.
 - **Interface:** consumes the API response JSON.
 - **Starts immediately with:** a mock API returning a hardcoded Score Object → builds the entire UI without waiting. Integrates the real API at the end.
 
 ### Person B — Scoring Engine (TRIBE on Modal)   [strongest ML person]
-- **Owns:** deploying TRIBE v2 on a Modal A100, feature extraction, video → raw brain output → reduce to 5 networks → compute metrics → emit a Score Object. Also precomputes the demo variants' scores.
+- **Owns:** deploying TRIBE v2 on a Modal A100, feature extraction, video → raw brain output → reduce to 5 networks → compute metrics → emit a Score Object. Also renders the **brain-frame flipbook** (nilearn/pycortex, one PNG/sec) and the **region_timeline**, and precomputes the demo variants' scores + frames.
 - **Does NOT own:** the API, the DB, the UI, variant generation.
 - **Interface:** one function `score(media) -> ScoreObject`, exposed as a Modal call for C.
 - **Starts immediately with:** any stock clips; no teammate dependency. Critical path — isolated on purpose so its risk is contained.
@@ -33,7 +33,7 @@ After this, everyone codes against mocks.
 - **Starts immediately with:** stub functions for B and D (canned Score Objects / canned variants) → builds and tests the whole API + DB against stubs, swaps in real ones as they land.
 
 ### Person D — Generation & Intelligence (ElevenLabs + ffmpeg + Backboard)
-- **Owns:** the Voice-A/B pipeline (ElevenLabs reads → ffmpeg audio overlay onto a base video → variant files), the Backboard LLM + memory/RAG layer (suggestions + personalized tips), the optional Gemini call, AND curating the demo dataset (the real example videos/variants for the precomputed demo).
+- **Owns:** the Voice-A/B pipeline (ElevenLabs reads → ffmpeg audio overlay onto a base video → variant files), the Backboard LLM + memory/RAG layer (suggestions + personalized tips), the **brain-animation explainer** (turns B's region_timeline into plain-English per-second captions), the optional Gemini call, AND curating the demo dataset (the real example videos/variants for the precomputed demo).
 - **Does NOT own:** the API surface, the model, the UI.
 - **Interface:** `generate_voice_variants(base_video, script) -> [videos]`, `suggest(...) -> [...]`, `tips(history) -> text`.
 - **Starts immediately with:** a base stock clip; independent of teammates. Feeds variant files to B and tips/suggestions to C.
