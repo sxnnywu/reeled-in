@@ -26,30 +26,42 @@ def _raw_engagement(preds) -> list:
 
 
 def predict_curves(model, video_path: str):
-    """Run TRIBE once, return (raw_engagement, perclip_engagement)."""
+    """Run TRIBE once, return (raw_engagement, perclip_engagement, raw_networks)."""
     events = model.get_events_dataframe(video_path=video_path)
     preds, _ = model.predict(events=events)
     raw = _raw_engagement(preds)
     perclip = metrics.compute_engagement(reduce_to_networks(preds))
-    return raw, perclip
+    return raw, perclip, raw_networks(preds)
 
 
 def run_ab_eval(model, clips: dict) -> dict:
     """clips: {name: video_path}. Returns per-clip metrics under both
-    normalizations. Shared scale = 95th percentile of all raw values (robust max)."""
-    raws, perclips = {}, {}
+    normalizations, plus a per-system (network) breakdown. Shared scale = 95th
+    percentile of all raw engagement values (robust max)."""
+    raws, perclips, rnets = {}, {}, {}
     for name, path in clips.items():
-        raws[name], perclips[name] = predict_curves(model, path)
+        raws[name], perclips[name], rnets[name] = predict_curves(model, path)
 
     all_vals = np.concatenate([np.asarray(v) for v in raws.values()])
     scale = float(np.percentile(all_vals, 95)) or 1.0
 
+    # Per-network shared scale so systems are comparable across clips too.
+    net_scale = {}
+    for net in metrics.NETWORK_WEIGHTS:
+        vals = np.concatenate([np.asarray(rnets[n][net]) for n in clips])
+        net_scale[net] = float(np.percentile(vals, 95)) or 1.0
+
     out = {}
     for name in clips:
         shared_norm = [min(1.0, float(v) / scale) for v in raws[name]]
+        systems = {
+            net: round(float(np.mean([min(1.0, v / net_scale[net]) for v in rnets[name][net]])), 4)
+            for net in metrics.NETWORK_WEIGHTS
+        }
         out[name] = {
             "shared": metrics.compute_metrics(shared_norm),
             "perclip": metrics.compute_metrics(perclips[name]),
+            "systems": systems,  # mean shared-normalized activation per brain system
         }
     return out
 
