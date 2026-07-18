@@ -7,9 +7,11 @@ Pipeline: media_key -> local file -> TRIBE predict (vertices/sec)
 
 from pathlib import Path
 
+import numpy as np
+
 from backend.scoring import metrics
-from backend.scoring.networks import reduce_to_networks
-from backend.scoring.regions import region_timeline
+from backend.scoring.networks import raw_networks, reduce_to_networks
+from backend.scoring.regions import region_timeline, region_timeline_from_networks
 from backend.scoring.tribe_model import CACHE_DIR, load_model
 
 # Where C mounts variant media on the GPU worker (media_key = "media/<variant_id>.mp4").
@@ -60,3 +62,45 @@ def score(media_key: str) -> dict:
         "duration_sec": float(n_timesteps),  # 1 Hz -> length == duration_sec
         "sample_rate_hz": 1,
     }
+
+
+def score_batch(media_keys: list) -> list:
+    """Score ALL variants of a test together on a SHARED scale (CONTRACTS §3).
+
+    Per-network reference = 95th percentile of that network's raw activation
+    across the whole batch (same robust-max as eval_ab). Every downstream number
+    — network curves, engagement (§3 blend), metrics, region_timeline activations —
+    sits on that shared scale, so variants are directly comparable. Numbers are
+    only meaningful within this batch, never across tests.
+    """
+    model = _get_model()
+    raws = {}  # media_key -> raw per-network series
+    for media_key in media_keys:
+        events = model.get_events_dataframe(video_path=_resolve_media(media_key))
+        preds, _segments = model.predict(events=events)
+        raws[media_key] = raw_networks(preds)
+
+    net_scale = {}
+    for net in metrics.NETWORK_WEIGHTS:
+        vals = np.concatenate([np.asarray(raws[k][net]) for k in media_keys])
+        net_scale[net] = float(np.percentile(vals, 95)) or 1.0
+
+    out = []
+    for media_key in media_keys:
+        networks = {
+            net: [round(min(1.0, float(v) / net_scale[net]), 4) for v in raws[media_key][net]]
+            for net in metrics.NETWORK_WEIGHTS
+        }
+        engagement = metrics.compute_engagement(networks)
+        n_timesteps = len(engagement)
+        out.append({
+            "variant_id": Path(media_key).stem,
+            "networks": networks,
+            "engagement": engagement,
+            "metrics": metrics.compute_metrics(engagement),
+            "brain_frames": [],
+            "region_timeline": region_timeline_from_networks(networks),
+            "duration_sec": float(n_timesteps),
+            "sample_rate_hz": 1,
+        })
+    return out

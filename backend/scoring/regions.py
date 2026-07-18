@@ -19,8 +19,14 @@ NETWORK_TO_REGION = {
 
 
 def region_timeline(vertex_timeseries) -> list:
-    """-> [{t, top_network, top_region, activation}, ...], one entry per second."""
-    networks = reduce_to_networks(vertex_timeseries)
+    """-> [{t, top_network, top_region, activation}, ...], one entry per second.
+    Per-clip normalized (legacy single-clip path). Batch scoring uses
+    region_timeline_from_networks so activations sit on the test's shared scale."""
+    return region_timeline_from_networks(reduce_to_networks(vertex_timeseries))
+
+
+def region_timeline_from_networks(networks: dict) -> list:
+    """Same timeline, but from already-normalized network curves (shared scale)."""
     names = list(networks.keys())
     n = len(next(iter(networks.values())))
     timeline = []

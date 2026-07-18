@@ -172,18 +172,16 @@ def score_test_gpu(test_id: str) -> dict:
     the winner (shared aggregation pipeline), flips status to complete. Failures
     flip status to failed. A polls GET /tests/{id} for the transitions.
 
-    TODO(B): the inner per-variant `score()` calls still use per-clip
-    normalization — swap to B's shared-scale batch entrypoint when the eval_ab
-    port lands (that swap happens HERE and nowhere else). Until then the batch
-    seam is contract-correct but the winner-reliability caveat from
-    NORMALIZATION_DECISION.md still applies to GPU-scored tests.
+    Uses B's shared-scale batch entrypoint (`score_batch`) — all variants
+    normalized against one per-network batch reference, per the ratified
+    CONTRACTS §3, so winners are reliable.
     """
     import os
 
     from pymongo import MongoClient
 
     from backend.db.repo import winner_pipeline, _score_doc
-    from backend.scoring.score import score
+    from backend.scoring.score import score_batch
     from backend.util import now_iso
 
     cache.reload()  # see media committed by the api() container (writer commits, reader reloads)
@@ -196,8 +194,9 @@ def score_test_gpu(test_id: str) -> dict:
         by_id = {v["_id"]: v for v in d.variants.find({"test_id": test_id})}
         ordered = [by_id[v] for v in test["variant_ids"] if v in by_id]
 
-        for variant in ordered:  # joint batch: all variants, one session, one model load
-            result = score(variant["media_key"])
+        # joint batch: one session, one model load, ONE shared normalization scale
+        results = score_batch([v["media_key"] for v in ordered])
+        for variant, result in zip(ordered, results):
             result["variant_id"] = variant["_id"]  # authoritative id
             d.scores.replace_one(
                 {"variant_id": variant["_id"]}, _score_doc(test_id, result), upsert=True
