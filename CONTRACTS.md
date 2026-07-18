@@ -103,14 +103,20 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
 | POST | `/api/tests` | `{ type, objective? }` | `Test` |
 | POST | `/api/tests/{test_id}/variants` | multipart: `file`, `label`, `params?` | `Variant` |
 | POST | `/api/tests/{test_id}/base-media` | multipart: `file` | `{ media_key }` |
-| POST | `/api/tests/{test_id}/voice-variants` | `{ base_media_key, script, voices? }` | `{ variants: [Variant] }` |
+| POST | `/api/tests/{test_id}/voice-variants` | `{ base_media_key, variants: [VoiceSpec] }` | `{ variants: [Variant] }` |
 | POST | `/api/tests/{test_id}/score` | — | `Test` (with `status`, `winner_variant_id`) |
 | GET  | `/api/tests/{test_id}` | — | `{ test: Test, variants: [Variant], scores: [ScoreObject] }` |
 | GET  | `/api/history` | — | `{ tests: [TestSummary] }` |
-| POST | `/api/suggest` (opt) | `{ context }` | `{ suggestions: [string] }` |
+| POST | `/api/suggest` | `{ base_media_key, context? }` | `{ variants: [VoiceSpec], rationale }` |
 | GET  | `/api/tests/{test_id}/tips` (opt) | — | `{ tips: string }` |
 | POST | `/api/tests/{test_id}/explain` | — | `{ explanations: { "<variant_id>": [ { "t": int, "text": string } ] } }` |
 
+- **`VoiceSpec`** (one requested voice variant; the client decides which knobs vary across a test — voice, script, pacing, or any mix):
+```json
+{ "label": "A", "script": "Stop scrolling...", "voice_id": "21m00Tcm4TlvDq8ikWAM",
+  "voice_settings": { "speed": 1.15, "stability": 0.5, "style": 0.6 } }
+```
+  `script` required. `voice_id` optional (backend picks a distinct default per spec). `voice_settings` optional, floats — `speed` [0.7,1.2], `stability`/`style` [0,1]. `label` optional (defaults "A","B","C"...). The spec is echoed back in the created Variant's `params`.
 - `Test`, `Variant`, `ScoreObject` are exactly the shapes in §3–§4.
 - The winner is decided by the test's `objective`; the backend sets `winner_variant_id` at score time.
 - **Base media (Voice A/B):** `POST /base-media` uploads the base video once → `{ media_key }`; pass it as `base_media_key` to `/voice-variants`. Upload-mode variants still POST their file straight to `/variants`.
@@ -167,6 +173,8 @@ Common codes: `bad_request`, `unauthorized`, `not_found`, `scoring_failed`, `int
 - 2026-07-18 — initial contract drafted (A/B/C/D to ratify in Phase 0 before freezing).
 - 2026-07-18 — brain-animation feature: Score Object gains `brain_frames` + `region_timeline`; added region vocabulary (§2) and `POST /explain` (§5).
 - 2026-07-18 — display: added `engagement` composite curve to the Score Object (§3); results screen now shows all 5 network curves + the composite curve.
+- 2026-07-18 — voice-variants: request body is now `{ base_media_key, variants: [VoiceSpec] }` (per-variant script/voice/pacing chosen by the client) instead of one script fanned out over N voices (§5).
+- 2026-07-18 — /suggest reworked: Gemini *watches the base video* (multimodal) and proposes a test plan — `{ base_media_key, context? }` → `{ variants: [VoiceSpec], rationale }` that feeds straight into `/voice-variants`. Replaces generic text suggestions (which duplicated Backboard). No longer optional (MLH Gemini track).
 - 2026-07-18 — §6 + §8 reworked for the **free-plan / courier-less** model: frontend calls the API directly from the browser; removed `BACKEND_API_KEY` (Base44 backend functions are Builder-plan-only).
 - 2026-07-18 — **Auth resolved (research-backed) — OVERRIDES the earlier "Base44 native login (Auth0 dropped)" lock.** Base44 native login is NOT externally verifiable on the free plan (SDK exposes no token accessor; `createClientFromRequest` is backend-function/Builder-only; custom OAuth is Base44-brokered) — it would have broken A↔C integration. New model: **Base44 app = Public**, **Auth0 (LOCKED)** client-side SPA SDK issues a JWT, C verifies per-request via Auth0's JWKS, CORS locks origin; **guaranteed fallback** = C-minted session JWT. Auth0 also wins the MLH Auth0 prize. Added `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` (§8); OVERVIEW / TECH_ARCHITECTURE / TEAM_DIVISION auth notes updated to match.
 - 2026-07-18 — §5: added `POST /tests/{id}/base-media` (Voice-A/B base upload → `media_key`); defined `POST /score` as async + `GET /tests/{id}` polling; `/history` now returns enriched `TestSummary` (no N+1).
