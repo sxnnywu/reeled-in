@@ -2,7 +2,7 @@
 
 **Neural A/B testing for short-form video — know which edit hooks the brain *before* you post.**
 
-> Hack the 6ix 2026 · Toronto · Jul 17–19 · (pivot from the earlier "Loopy" concept)
+> Hack the 6ix 2026 · Toronto · Jul 17–19
 
 ## What it does
 
