@@ -33,9 +33,62 @@ tribe_image = (
         "pip install -e /opt/tribev2-src",
         "python -m spacy download en_core_web_sm",
     )
+    .pip_install("nilearn")  # Destrieux atlas for the vertex->network mapping
     .env({"HF_HOME": f"{CACHE_DIR}/hf"})
     .add_local_python_source("backend")
 )
+
+
+# Model-free objective signals (CPU): motion, sharpness, YOLO clarity,
+# MediaPipe face expression, Whisper transcript.
+objective_image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .apt_install("ffmpeg", "libgl1", "libglib2.0-0", "libgles2", "libegl1", "libgl1-mesa-dri")
+    .pip_install(
+        "numpy", "opencv-python-headless", "ultralytics", "mediapipe", "openai-whisper"
+    )
+    .add_local_python_source("backend")
+)
+
+
+@app.function(image=objective_image, volumes={CACHE_DIR: cache}, timeout=5400)
+def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
+    """Run all model-free signals on the clips: motion, sharpness (blur), object
+    clarity (YOLO), facial expression (MediaPipe), speech transcript (Whisper).
+    Each is wrapped so one failing model doesn't sink the rest."""
+    import json
+    from pathlib import Path
+
+    from backend.scoring.face import analyze_face
+    from backend.scoring.hands import analyze_hands
+    from backend.scoring.objects import detect_objects
+    from backend.scoring.objective import measure_motion, measure_sharpness
+    from backend.scoring.transcript import transcribe
+
+    folder = Path(CACHE_DIR) / "media" / subdir
+    wanted = {n.strip() for n in names.split(",") if n.strip()}
+    clips = {p.stem: str(p) for p in sorted(folder.glob("*.mp4")) if not wanted or p.stem in wanted}
+
+    def safe(fn):
+        try:
+            return fn()
+        except Exception as e:
+            return {"error": str(e)[:250]}
+
+    out = {}
+    for name, path in clips.items():
+        out[name] = {
+            "motion": measure_motion(path)["mean_motion"],
+            "sharpness": measure_sharpness(path)["sharpness"],
+            "clarity": safe(lambda: detect_objects(path, CACHE_DIR)),
+            "face": safe(lambda: analyze_face(path, CACHE_DIR)),
+            "hands": safe(lambda: analyze_hands(path, CACHE_DIR)),
+            "speech": safe(lambda: transcribe(path, CACHE_DIR)),
+        }
+        cache.commit()
+        print(f"done {name}: {json.dumps(out[name])[:400]}")
+    print("OBJECTIVE:\n" + json.dumps(out, indent=2))
+    return out
 
 
 @app.function(image=image, volumes={CACHE_DIR: cache})  # Volume mount: C serves/stores media
@@ -48,6 +101,24 @@ def api():
     from backend.main import app as fastapi_app
 
     return fastapi_app
+
+
+@app.function(image=tribe_image, gpu="A100", volumes={CACHE_DIR: cache}, timeout=7200)
+def precompute_demo(subdir: str = "eval") -> dict:
+    """Score + render brain frames for the demo clips, saving full Score Objects
+    to /cache/precomputed/ for the bulletproof (no live GPU) demo path."""
+    import json
+    from pathlib import Path
+
+    from backend.scoring.precompute import precompute
+
+    folder = Path(CACHE_DIR) / "media" / subdir
+    clips = {p.stem: str(p) for p in sorted(folder.glob("*.mp4"))}
+    print(f"Precomputing {len(clips)} demo clips: {list(clips)}")
+    summary = precompute(clips, CACHE_DIR)
+    cache.commit()
+    print("PRECOMPUTE SUMMARY:\n" + json.dumps(summary, indent=2))
+    return summary
 
 
 @app.function(image=tribe_image, gpu="A100", volumes={CACHE_DIR: cache}, timeout=3600)
@@ -88,6 +159,93 @@ def load_test() -> dict:
     info = {"loaded": True, "device": "cuda" if torch.cuda.is_available() else "cpu"}
     print("TRIBE load test:", info)
     return info
+
+
+@app.function(image=tribe_image, volumes={CACHE_DIR: cache}, timeout=1800)
+def mask_test() -> dict:
+    """Build the Destrieux vertex->network mask and report vertex counts per
+    network (no GPU needed)."""
+    import numpy as np
+
+    from backend.scoring.networks import NETWORKS, build_network_mask
+
+    mask = build_network_mask()
+    cache.commit()
+    counts = {name: int((mask == i).sum()) for i, name in enumerate(NETWORKS)}
+    counts["unassigned"] = int((mask == -1).sum())
+    info = {"total_vertices": int(mask.shape[0]), "per_network": counts}
+    print("Network mask:", info)
+    return info
+
+
+@app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=7200)
+def eval_folder(subdir: str = "eval", names: str = "") -> dict:
+    """Score clips in /cache/media/<subdir> on one shared scale. `names` =
+    optional comma-separated stems to limit to (e.g. "IMG_7024,IMG_7025").
+    Returns per-clip metrics under both normalizations."""
+    import json
+    from pathlib import Path
+
+    from backend.scoring.eval_ab import run_ab_eval
+    from backend.scoring.tribe_model import load_model
+
+    folder = Path(CACHE_DIR) / "media" / subdir
+    wanted = {n.strip() for n in names.split(",") if n.strip()}
+    clips = {
+        p.stem: str(p)
+        for p in sorted(folder.glob("*.mp4"))
+        if not wanted or p.stem in wanted
+    }
+    print(f"Scoring {len(clips)} clips: {list(clips)}")
+
+    model = load_model(CACHE_DIR)
+    results = run_ab_eval(model, clips)
+    cache.commit()
+    print("EVAL RESULTS:\n" + json.dumps(results, indent=2))
+    return results
+
+
+@app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
+def dryrun_eval() -> dict:
+    """Generate a CALM clip and a BUSY clip, score both, and show that the
+    shared-scale normalization separates them while per-clip flattens them.
+    Validates the A/B pipeline before real clips are recorded."""
+    import json
+    import subprocess
+    from pathlib import Path
+
+    from backend.scoring.eval_ab import pair_winner, run_ab_eval
+    from backend.scoring.tribe_model import load_model
+
+    d = Path(CACHE_DIR) / "media" / "dryrun"
+    d.mkdir(parents=True, exist_ok=True)
+    calm, busy = str(d / "calm.mp4"), str(d / "busy.mp4")
+
+    # CALM: static gray frame, silence.
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=gray:s=320x240:d=20:r=25",
+         "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "20",
+         "-pix_fmt", "yuv420p", "-shortest", calm],
+        check=True, capture_output=True,
+    )
+    # BUSY: fast-moving test pattern + audible tone.
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "testsrc=duration=20:size=320x240:rate=30",
+         "-f", "lavfi", "-i", "sine=frequency=440:duration=20",
+         "-pix_fmt", "yuv420p", "-shortest", busy],
+        check=True, capture_output=True,
+    )
+
+    model = load_model(CACHE_DIR)
+    results = run_ab_eval(model, {"calm": calm, "busy": busy})
+    cache.commit()
+    verdict = {
+        "shared_scale": pair_winner(results, "calm", "busy", "shared"),
+        "perclip": pair_winner(results, "calm", "busy", "perclip"),
+        "metrics": results,
+    }
+    print("DRY-RUN A/B:\n" + json.dumps(verdict, indent=2))
+    return verdict
 
 
 @app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
