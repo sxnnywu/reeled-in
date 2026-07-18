@@ -1,6 +1,6 @@
 # Reeled In — Product Requirements (PRD)
 
-Last updated: 2026-07-18. Companion to `overview.md` and `tech-architecture.md`.
+Last updated: 2026-07-18. Companion to `OVERVIEW.md` and `TECH_ARCHITECTURE.md`.
 
 ## Summary
 Reeled In predicts how the human brain engages with short-form video, so creators and marketers can A/B test variants of a Reel/TikTok — hook, music, voiceover, pacing, CTA — and pick a winner *before* posting, using Meta's TRIBE v2 brain model instead of live posting or human focus groups.

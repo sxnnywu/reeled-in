@@ -1,6 +1,6 @@
 # Reeled In — Technical Architecture
 
-Last updated: 2026-07-18. Companion to `overview.md` and `PRD.md`.
+Last updated: 2026-07-18. Companion to `OVERVIEW.md` and `PRD.md`.
 
 ## Stack at a glance
 - **Base44** — frontend (upload UI, results screen) + built-in user auth. The "storefront + front door."

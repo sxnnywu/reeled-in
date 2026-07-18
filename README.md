@@ -66,7 +66,7 @@ Why two "backends": Base44 can't run heavy ML Python or reliably reach Atlas fro
 
 ## Team (4) — build split
 
-Four parallel lanes, two frozen contracts (the **API contract** and the **Score Object**) agreed in hour 0–1 and written into `CONTRACTS.md` — after that everyone builds against mocks and nobody blocks anybody. Full detail: [`team-division.md`](team-division.md).
+Four parallel lanes, two frozen contracts (the **API contract** and the **Score Object**) agreed in hour 0–1 and written into `CONTRACTS.md` — after that everyone builds against mocks and nobody blocks anybody. Full detail: [`TEAM_DIVISION.md`](TEAM_DIVISION.md).
 
 | Lane | Owns | Interface |
 |---|---|---|
@@ -86,7 +86,7 @@ Integration order (last third): C swaps in B's real scorer → C swaps in D's re
 
 ### Build phases
 
-Full phase plan, repo layout with per-file owners, and the cross-person dependency ledger: [`parallel-implementation-plan.md`](parallel-implementation-plan.md).
+Full phase plan, repo layout with per-file owners, and the cross-person dependency ledger: [`PARALLEL_IMPLEMENTATION_PLAN.md`](PARALLEL_IMPLEMENTATION_PLAN.md).
 
 - **Phase 0 — Contracts & scaffold** *(blocker, whole team, ~first hour)*: freeze `CONTRACTS.md` (Score Object, API, token format, Mongo shapes); C scaffolds repo + Atlas, B boots Modal + **accepts the gated HuggingFace LLaMA-3.2 license hour 1**, A creates the Base44 project, D grabs stock clips + keys.
 - **Phase 1 — Build against mocks**: all four fully independent — the maximum-parallelism window.
@@ -98,12 +98,12 @@ Full phase plan, repo layout with per-file owners, and the cross-person dependen
 
 ## Docs
 
-- [`overview.md`](overview.md) — project overview: scope, prize tracks, hackathon logistics, open decisions
-- [`team-division.md`](team-division.md) — the 4-lane split, frozen contracts, dependency map, integration order
-- [`parallel-implementation-plan.md`](parallel-implementation-plan.md) — phases 0–4, annotated repo layout, dependency ledger, critical path
+- [`OVERVIEW.md`](OVERVIEW.md) — project overview: scope, prize tracks, hackathon logistics, open decisions
+- [`TEAM_DIVISION.md`](TEAM_DIVISION.md) — the 4-lane split, frozen contracts, dependency map, integration order
+- [`PARALLEL_IMPLEMENTATION_PLAN.md`](PARALLEL_IMPLEMENTATION_PLAN.md) — phases 0–4, annotated repo layout, dependency ledger, critical path
 - [`PRD.md`](PRD.md) — product requirements: users, features, metric definition, risks
-- [`tech-architecture.md`](tech-architecture.md) — full system design, endpoints, data flow, secrets
-- [`how-tribe-v2-works.md`](how-tribe-v2-works.md) — TRIBE v2 deep-dive: pipeline, the five networks, limits, runtime
+- [`TECH_ARCHITECTURE.md`](TECH_ARCHITECTURE.md) — full system design, endpoints, data flow, secrets
+- [`HOW_TRIBE_V2_WORKS.md`](HOW_TRIBE_V2_WORKS.md) — TRIBE v2 deep-dive: pipeline, the five networks, limits, runtime
 
 ## Science caveats (we say these out loud)
 

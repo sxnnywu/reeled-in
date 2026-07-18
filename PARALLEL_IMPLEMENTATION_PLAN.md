@@ -1,6 +1,6 @@
 # Reeled In — Parallel Implementation Plan
 
-Last updated: 2026-07-18. Companion to `team-division.md`, `tech-architecture.md`, `PRD.md`.
+Last updated: 2026-07-18. Companion to `TEAM_DIVISION.md`, `TECH_ARCHITECTURE.md`, `PRD.md`.
 People: **A** = Frontend & Design (Base44) · **B** = Scoring Engine (TRIBE/Modal) · **C** = Backend & Data (FastAPI/Mongo) · **D** = Generation & Intelligence (ElevenLabs/ffmpeg/Backboard).
 
 ## How to read this
@@ -14,7 +14,7 @@ The **Dependency Ledger** at the bottom lists every cross-person dependency in o
 ```
 reeled-in/
 ├─ CONTRACTS.md                 [P0 · whole team]  the two frozen contracts
-├─ overview.md / tech-architecture.md / PRD.md / team-division.md / how-tribe-v2-works.md
+├─ OVERVIEW.md / TECH_ARCHITECTURE.md / PRD.md / TEAM_DIVISION.md / HOW_TRIBE_V2_WORKS.md
 ├─ backend/
 │  ├─ requirements.txt          [C]
 │  ├─ .env.example              [C]

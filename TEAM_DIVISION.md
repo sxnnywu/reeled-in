@@ -1,6 +1,6 @@
 # Reeled In — Team Division (4 people)
 
-Last updated: 2026-07-18. Companion to `tech-architecture.md` and `PRD.md`.
+Last updated: 2026-07-18. Companion to `TECH_ARCHITECTURE.md` and `PRD.md`.
 
 ## Principle
 Four parallel lanes with **two frozen contracts** so nobody blocks anybody. The riskiest piece (the TRIBE scoring engine) is isolated behind a data contract — if it runs slow, the other three never stall, because they build against a mock.

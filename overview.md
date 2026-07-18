@@ -55,6 +55,6 @@ Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio 
 - **Team size / who builds what** — still needed for a task-division plan.
 
 ## Related docs
-- `how-tribe-v2-works.md` — model deep-dive.
-- `tech-architecture.md` — full system design + data flow.
+- `HOW_TRIBE_V2_WORKS.md` — model deep-dive.
+- `TECH_ARCHITECTURE.md` — full system design + data flow.
 - `PRD.md` — product requirements.
