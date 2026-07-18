@@ -28,10 +28,11 @@ Once stubs are committed, **no one changes a field name, method signature, route
 ### 1. Orchestration (sandbox fleet + loop runner)
 
 Owns:
-- Loop-spec ingestion (parsing a registered agent system into Loopy's internal spec)
+- Loop-spec ingestion: normalizing a GitHub repo, folder upload, or inline spec into a `LoopSpec` (Loopy is model-agnostic — we reference the user's agents/skills/connectors, not re-implement them)
 - Sandbox lifecycle: provision, run, teardown, retry
 - Fan-out controller (N concurrent runs, seeded input variation)
-- The example target loops we QA in the demo (incl. Gemini-powered agents, Backboard.io memory)
+- The demo loop (Layer 1): the **morning-triage** 6-agent CI-triage loop — Gemini agents + Backboard memory here are *that loop's* choices, not Loopy platform requirements
+- Instrumentation adapter: wraps the loop, records all agent I/O as contract-shaped `Event`s, model-agnostically
 - Event emission from inside sandboxes (conforming to the shared event schema)
 
 Does not own:
