@@ -16,7 +16,6 @@ You own:
 - Aggregation pipelines: completion rate, stall detection, iteration histogram, divergence, token/cost stats, per-handoff failure rates
 - Failure clustering + Gemini-summarized `Finding`s
 - Report assembly
-- Nice-to-have: Solana attestation of report hash
 
 You do not own:
 - Sandbox lifecycle, loop runner, example loops, dashboard UI
@@ -49,7 +48,7 @@ You do not own:
 - [ ] Report assembly + persistence
 
 ### Step 3: Nice-to-have
-- [ ] Solana: hash report JSON, anchor on-chain, store tx ref in report
+- [ ] (none currently — Solana cut)
 
 ## Confirm with Orchestration
 - [ ] Event batch flush timing (so live feed isn't laggy)

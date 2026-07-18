@@ -19,7 +19,6 @@ The more of these we integrate meaningfully, the better — but "meaningfully" i
 
 | Integration | Candidate Role | Status |
 |---|---|---|
-| **Solana** | On-chain attestation: hash of a QA report batch anchored on-chain as a verifiable audit record | [ ] go/no-go |
 | **Eleven Labs** | Voice-agent example loop (TTS/voice agents as one of the target systems Loopy QAs); voice narration of the QA report | [ ] go/no-go |
 
 Rule: each confirmed integration gets its role, owner workstream, and required env vars recorded in `SHARED_CONTRACTS.md` §Env.

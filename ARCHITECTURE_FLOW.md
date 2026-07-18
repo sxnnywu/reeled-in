@@ -8,7 +8,7 @@ Loopy has two clearly separated layers. Keeping them separate resolves "whose mo
 
 - **Layer 1 — the Loop Under Test (the user's).** Its models, prompts, skills, and connectors are whatever the *user* chose. Loopy is **model-agnostic** here — if their loop runs on GPT-5, Claude, or Gemini, we test it as-is. We do **not** impose our stack on it. Loopy runs the loop in a sandbox behind an **instrumentation adapter** that records agent I/O regardless of the underlying model.
   - *For the demo,* the Layer-1 loop is our authored **morning-triage** loop, which happens to use Gemini agents + Backboard memory — but that's the demo loop's choice, not a Loopy requirement.
-- **Layer 2 — Loopy's QA Infrastructure (ours).** This is our stack, and where the sponsors legitimately live: **MongoDB** (event store + stats + clustering), **Gemini** (the analysis model that narrates findings), **Backboard** (longitudinal QA memory + analysis routing), **Base44** (dashboard). Optional: Solana (attestation), ElevenLabs (narration).
+- **Layer 2 — Loopy's QA Infrastructure (ours).** This is our stack, and where the sponsors legitimately live: **MongoDB** (event store + stats + clustering), **Gemini** (the analysis model that narrates findings), **Backboard** (longitudinal QA memory + analysis routing), **Base44** (dashboard). Optional: ElevenLabs (narration).
 
 > One line: **Layer 1 is the user's loop we observe; Layer 2 is the QA product we built. Sponsors power Layer 2.**
 
@@ -66,7 +66,6 @@ flowchart TD
         LM["demo-loop models/memory<br/>(Gemini + Backboard here are the<br/>DEMO LOOP's choice — swappable)"]
     end
 
-    SOL["Solana (optional) — report hash"]
     EL["ElevenLabs (optional) — report narration"]
 
     U -->|connect / upload / paste| ING
@@ -87,7 +86,6 @@ flowchart TD
     AE --> RB
     PIPE --> RB
     RB --> REP
-    RB -.-> SOL
     REP -->|GET /api/runs/:id/report| DASH
     DASH -.-> EL
 
@@ -106,7 +104,7 @@ flowchart TD
 | **Gemini** | 2 (Loopy) | analysis model that writes `Finding`s | Structured JSON output, Batch API for the analysis pass; served **via Backboard** |
 | **Backboard** | 2 (Loopy) | longitudinal QA memory + analysis routing | Memory scoped per `spec_id` = trends/regressions across batches; router serves the analysis model |
 | **Base44** | 2 (Loopy) | dashboard / report viewer | Front-end; Mongo stays source of truth |
-| **Solana / ElevenLabs** | 2 (opt) | report attestation / narration | Verifiable audit record; voice summary |
+| **ElevenLabs** | 2 (opt) | report narration | Voice summary |
 | **Gemini / Backboard (again)** | **1 (demo loop)** | the morning-triage agents' model + memory | *The demo loop's* choice — swappable; NOT required of a user's loop |
 
 ## Loop ingestion (how a loop gets registered)
@@ -163,7 +161,7 @@ class QaMemory(BaseModel):        # NEW (Layer-2, Backboard-backed): longitudina
 
 ### 6. Reporting & Dashboard (Layer 2)
 - Report = findings + stats + representative transcripts + **trend vs last run**, stored in `reports`.
-- Dashboard: fleet status (live via change streams), sampled traffic feed, report view. Optional Solana attestation, ElevenLabs narration.
+- Dashboard: fleet status (live via change streams), sampled traffic feed, report view. Optional ElevenLabs narration.
 
 ## Failure Handling Principles
 - A sandbox failure is DATA, not an error: record + classify it.

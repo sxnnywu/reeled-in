@@ -50,3 +50,8 @@ Gotchas: sandbox substrate is THE open decision — nothing in Orchestration sho
 What changed: backend/ added — analysis pipelines (Tier 1+2), CI-triage demo spec, fake seeder; PERSON_C_PLAN.md + DEMO_TARGET_CI_TRIAGE.md at root.
 Decisions made: Jay prefers the 6-AGENT CI-triage loop as demo target — CONFLICTS with example-loops/morning-triage.md ("the one loop"). NEEDS TEAM ALIGNMENT before A builds the runner.
 Gotchas for the next person: analysis needs runner to emit payload keys `classified`, `verdict`, `must_pass_ok` (see PERSON_C_PLAN.md §6); C uses a local models.py mirror until A commits the shared module.
+
+### 2026-07-17 late — Jay (Person C) + Claude
+What changed: CUT Solana, Deloitte, Freesolo, Auth0 from ALL docs (PARALLEL_IMPLEMENTATION_PLAN, ARCHITECTURE_FLOW, INTEGRATIONS_AND_STACK, TEAM_DIVISION, PROJECT_OVERVIEW, SHARED_CONTRACTS env, data-and-storage PLAN). Confirmed stack = Backboard, Pheobe (TBD), Base44, Warp, MongoDB, Gemini; ElevenLabs + Unifold remain optional.
+Decisions made: we are NOT pursuing those four tracks. If anyone disagrees, raise it before re-adding.
+Gotchas for the next person: SOLANA_RPC_URL removed from SHARED_CONTRACTS §6.

@@ -153,7 +153,6 @@ BACKBOARD_API_KEY=
 PHEOBE_API_KEY=            # pending role confirmation
 BASE44_...=                # pending
 ELEVENLABS_API_KEY=        # nice-to-have
-SOLANA_RPC_URL=            # nice-to-have
 ```
 
 ## 7. Producer / Consumer Map

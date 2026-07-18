@@ -45,7 +45,6 @@ Owns:
 - Aggregation pipelines: completion rate, stall detection, divergence, cost stats, failure clustering
 - LLM-assisted findings (Gemini summarization of failure clusters)
 - QA report generation
-- Nice-to-have: Solana attestation of report hashes
 
 Does not own:
 - Sandbox lifecycle, example loops, dashboard UI

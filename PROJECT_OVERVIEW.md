@@ -79,7 +79,6 @@ Stretch:
 
 - [ ] 1,000-sandbox run
 - [ ] A/B mode: weak vs strong reviewer, distributions compared
-- [ ] On-chain attestation of QA results (Solana)
 - [ ] A second registered loop (e.g. a payments loop) to prove domain-agnosticism / open the Unifold track
 
 ---

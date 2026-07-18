@@ -14,7 +14,7 @@ The existing repo has **three workstreams** but **four people**. The heaviest wo
 |---|---|---|---|
 | **A** | Orchestration / platform spine | Orchestration | `main.py`, `core/config.py`, shared Pydantic models, `spec_ingestion.py`, `fanout_controller.py`, `loop_runner.py`, `event_emitter.py`, `routes/specs.py`, `routes/runs.py`, `examples/finflow_spec.json`, **the fake emitter** |
 | **B** | Data-Capture / the pipes | Data & Storage (capture half) | `core/database.py`, `event_collector.py`, `routes/events.py`, query route `/sandboxes`, `api/ws.py` (WebSocket) |
-| **C** | Data-Analysis / the insights | Data & Storage (analysis half) | `analysis/pipelines.py`, `analysis/clustering.py`, `report_builder.py`, `routes/reports.py`; nice-to-have Solana attestation |
+| **C** | Data-Analysis / the insights | Data & Storage (analysis half) | `analysis/pipelines.py`, `analysis/clustering.py`, `report_builder.py`, `routes/reports.py` |
 | **D** | Interface & Design / presenter | Interface & Design | Dashboard (fleet / traffic / report views), spec-registration form, design system, demo script, deck; nice-to-have ElevenLabs narration |
 
 A, B, C are the three technical members; **D is the presenter/designer** (per `TEAM_DIVISION.md`) and pulls in whichever technical person is free for dashboard wiring in Phase 2 (C is the natural helper — see §5).
@@ -109,7 +109,7 @@ Hours are relative to build start (H0 = 9:30 PM Fri). Bands are approximate; the
 - **A:** scale 50 → 100 → stretch toward 1,000; tune batch flush timing with B so the live feed isn't laggy.
 - **C:** confirm findings read well on real data; tune the planted-failure scenario (multi-currency stall) so the demo's "money moment" reliably appears.
 - **D:** swap mock → real data everywhere; rehearse the **"one anecdote vs a distribution"** narrative end-to-end **twice**; lock the one happy path + the one failure-finding moment.
-- **Nice-to-haves only if green:** Solana attestation of report hash (C), ElevenLabs report narration (D), Unifold-backed FinFlow variant (A — see §7).
+- **Nice-to-haves only if green:** ElevenLabs report narration (D), Unifold-backed FinFlow variant (A — see §7).
 
 ### Phase 4 — Freeze + buffer (H32–H36)
 - Feature freeze. Only bug-fixes on the demo path. Re-rehearse. Record the backup demo video. Submit Devpost stub early (declare tracks).
@@ -149,10 +149,6 @@ These map to Hack the 6ix tracks and mostly fall out of the architecture already
 - **Warp** — drive the sandbox fleet ops from the agentic terminal; document it in the demo. ✔
 - **Base44** — the dashboard/report viewer (if chosen in Phase 0). ✔
 - **Unifold ($1k)** — make FinFlow a *real stablecoin settlement* loop so Loopy catches a settle-stall / double-settle. This also showcases the idempotency angle as a *detected finding*. High-value, low extra cost — A owns, Phase 3. ★
-- **Freesolo (SF flight)** — train the failure-clustering / finding model on their platform (C owns). ★
-- **Deloitte (Green AI)** — the token/cost distribution is already computed; frame one finding as "loop efficiency / wasted tokens." ✔ (C, framing only)
-- **Auth0 (MLH)** — login on the dashboard (D, ~1 hr). ✔
-- **Solana (MLH)** — report-hash attestation (C, nice-to-have). ◐
 - **ElevenLabs** — voice narration of the report + a voice-agent example loop (D, nice-to-have). ◐
 
 Declare only what you actually wire. Over-declaring incoherent tracks costs you on the technical-difficulty axis.
