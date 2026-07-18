@@ -35,12 +35,28 @@ def _threads() -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
-def _remember_thread(user_id: str, thread_id: str):
+def _local_get_thread(user_id: str):
+    return _threads().get(user_id)
+
+
+def _local_set_thread(user_id: str, thread_id: str):
     path = resolve(THREADS_FILE)
     path.parent.mkdir(parents=True, exist_ok=True)
     threads = _threads()
     threads[user_id] = thread_id
     path.write_text(json.dumps(threads, indent=2))
+
+
+# Pluggable thread-map store. Default: local JSON. C: call configure_thread_store with
+# getters/setters backed by users.backboard_thread_id at startup — no other change needed.
+_get_thread = _local_get_thread
+_set_thread = _local_set_thread
+
+
+def configure_thread_store(get_thread, set_thread):
+    """get_thread(user_id) -> thread_id|None; set_thread(user_id, thread_id) -> None."""
+    global _get_thread, _set_thread
+    _get_thread, _set_thread = get_thread, set_thread
 
 
 def record_test(user_id: str, test: dict, variants: list, winner_variant_id: str) -> str:
@@ -54,8 +70,8 @@ def record_test(user_id: str, test: dict, variants: list, winner_variant_id: str
             f"{v['label']}: {json.dumps(v.get('params', {}))}" for v in variants),
         "Remember what wins for this creator so future advice is personalized.",
     ]
-    out = _post("\n".join(lines), _threads().get(user_id))
-    _remember_thread(user_id, out["thread_id"])
+    out = _post("\n".join(lines), _get_thread(user_id))
+    _set_thread(user_id, out["thread_id"])
     return out["thread_id"]
 
 
@@ -67,9 +83,9 @@ def tips(user_id: str) -> str:
         "actionable tips for their next short-form video. If you have no history yet, give "
         "2-3 solid general hook/pacing tips and say you'll personalize as they run tests. "
         "Plain text, no markdown.",
-        _threads().get(user_id),
+        _get_thread(user_id),
     )
-    _remember_thread(user_id, out["thread_id"])
+    _set_thread(user_id, out["thread_id"])
     return out["content"]
 
 
