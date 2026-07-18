@@ -137,10 +137,10 @@ pipeline = [
 - **On test completion** (in the score flow, right after C sets `winner_variant_id`): call `llm.record_test(user_id, test, variants, winner_variant_id)` so the memory learns.
 - **`GET /tests/{id}/tips`:** resolve `test_id → user_id`, call `llm.tips(user_id)`, return `{ tips }`. (Tips are per-*user* memory even though the route hangs off a test — C bridges.)
 
-**Atlas Vector Search — keep ONLY as an optional, non-overlapping stretch (MongoDB Atlas track depth):** a *semantic "find similar past tests"* browse feature (embed test summaries in `test_summaries`, `$vectorSearch` filtered by `user_id`) — distinct from Backboard's tips because it's retrieval-for-display, not advice generation. Ship the aggregation pipeline (5.1) as the primary MongoDB story; only add this if 5.1 + core routes are done and you want the extra Atlas-track surface. Adds `VOYAGE_API_KEY` (§8). **Default: skip** unless there's clear slack.
+**Atlas Vector Search — the optional stretch is now MULTIMODAL (upgraded after a mid-2026 feature scan):** if slack exists, embed the **actual video variants** — 3–5 extracted frames (ffmpeg) or the thumbnail, optionally interleaved with the hook text — using **voyage-multimodal-3.5** (GA Jan 2026; first production embedding model with native video support), store a 512-dim vector per variant, and `$vectorSearch` over a plain vector index (**works on M0**) → a "visually similar past variants" panel showing their historical engagement curves. Call it via the **Atlas Embedding & Reranking API** (Preview — Atlas-minted Model API key, ~200M free tokens, billing inside Atlas; the direct Voyage API is the identical-shape fallback). Distinct from Backboard's tips (retrieval-for-display, not advice generation) and a much stronger Atlas-track story than text-summary embeddings: *visual similarity search over the same videos we neuro-test*. ~3–5 hrs, Low-Med risk. Ship 5.1 + core routes first; **default: skip** unless there's clear slack.
 
-### 5.3 Atlas Search (BM25), optionally hybrid `$rankFusion` — *nice-to-have, Low→Med, GA — contingent on 5.2*
-Only relevant if the optional 5.2 semantic-history feature is built: a `$search` index over `test_summaries` gives keyword history search, and `$rankFusion` fuses BM25 + `$vectorSearch` into one hybrid query. A genuine differentiator, but strictly clock-permitting and after the core routes + 5.1 land.
+### 5.3 Hybrid search — ⚠️ **`$rankFusion`/`$scoreFusion` do NOT run on our tier** (corrected)
+**M0/Flex clusters are pinned to MongoDB 8.0**; `$rankFusion` needs 8.1+ and `$scoreFusion` 8.2+ (the auto-upgrade 8.3 channel is M10+ only). The earlier recommendation to use them is withdrawn. If hybrid keyword+vector search is ever wanted (only if 5.2 is built), do **Reciprocal Rank Fusion manually in Python** over a `$search` query + a `$vectorSearch` query (~20 lines) — or skip BM25 entirely. Same constraint kills the new native `$rerank` stage (8.3). Keep every aggregation **8.0-compatible** — `$percentile`, `$median`, `$setWindowFields`, `$avg`/`$reduce` over arrays are all in 8.0 and cover everything 5.1 needs. Verify the server version on the live cluster in hour one.
 
 ### 5.4 Storage shape decision — embedded arrays, **not** time-series collections — *validates current design*
 The 5 network curves are fixed-length float arrays written **once** when scoring finishes, then read many times — a bounded blob on a variant, not an open-ended measurement stream. Mongo **Time Series collections** shine for continuous appends and carry update restrictions (can't update non-meta fields in place) that fight our write-once/occasionally-overwrite flow. **Keep the current embedded-array `scores` document** (`schemas.py` already does this ✅) — and it's what makes 5.1's array analytics trivial.
@@ -179,7 +179,8 @@ Collections (`reeled_in`): `users`, `tests`, `variants`, `scores`; `test_summari
 - [ ] **Scoring** off the request path: `score_gpu.spawn(...)` (never `.remote()` in a route — 150 s web cap); GPU fn writes status+score to Mongo.
 - [ ] Store the **full Score Object** (incl. `engagement`, `brain_frames`, `region_timeline`).
 - [ ] Winner + analytics in an **aggregation pipeline**, not Python.
-- [ ] Verify on the actual Atlas cluster during setup: vector/search indexes build on **M0**; whether Automated Embedding is enabled before demo-depending on it.
+- [ ] **Know the M0 ceiling:** cluster is pinned to **MongoDB 8.0** (no `$rankFusion`/`$scoreFusion`/`$rerank`/8.3 operators — see 5.3); max 50 pipeline stages, no `allowDiskUse`. Vector + search indexes DO build on M0; Automated Embedding (`autoEmbed`) is Public Preview but M0-supported (Voyage-4-family models). Verify all of this on the live cluster in hour one.
+- [ ] Optional dev tooling: point the **MongoDB MCP server** (GA) at the cluster for the weekend — schema inspection, pipeline prototyping, index advice — and it's one honest pitch line for the MLH MongoDB prize.
 - [ ] **Day-1 smoke test (do not defer):** from the *deployed* Base44 app, `fetch()` your Modal `/api/health` and run an Auth0 popup login end-to-end — Base44's CSP isn't per-app configurable and is undocumented for outbound calls, so prove it early. Bundle the Auth0 SDK via npm (not a CDN `<script>`) and use **popup** login (silent-iframe auth is fragile under CSP/ITP). Add the Base44 origin to Auth0 Allowed Callback/Web-Origin/Logout URLs.
 
 ---
@@ -222,7 +223,7 @@ Per the change process (§0 of `CONTRACTS.md`): edit the contract first, log it,
 - **Media root ownership (needs B+D sign-off):** confirm D writes generated variants to the shared Volume `/cache/media` (or hands files to C to place there), and that B keeps resolving `media_key` under the same root (it already does ✅). Without this, live generate→score breaks on Modal.
 - ~~5.2 boundary~~ **RESOLVED (review of `dc6a73a`):** D shipped Backboard memory+tips (`llm.py`), so C **wires** it (persist `backboard_thread_id`, call `record_test` on completion, route `/tips`) — no Vector Search for personalization (would duplicate it). Vector Search stays only as an optional *distinct* semantic-search stretch.
 - Auth: proceed with Auth0 (locked in §6) — confirm the SPA SDK loads inside the Public Base44 page (CSP) at the event.
-- Hybrid `$rankFusion` search (5.3): only if the clock allows.
+- Optional stretch (5.2): multimodal "visually similar past variants" via voyage-multimodal-3.5 + `$vectorSearch` — only if 5.1 + core routes land with slack. (`$rankFusion` hybrid is off the table — not on M0, see 5.3.)
 
 ---
 
@@ -304,7 +305,10 @@ db = _client[os.environ.get("MONGODB_DB", "reeled_in")]   # await db.tests.find_
 **MongoDB:**
 - Vector Search stage / overview: https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/ · https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-overview/
 - Voyage embeddings quickstart: https://www.mongodb.com/docs/voyageai/quickstart/ · Automated Embedding: https://www.mongodb.com/docs/vector-search/crud-embeddings/automated-embedding/
-- Hybrid `$rankFusion`: https://www.mongodb.com/docs/manual/reference/operator/aggregation/rankfusion/
+- M0 limits (pinned to 8.0; no `$rankFusion` on free tier): https://www.mongodb.com/docs/atlas/atlas-versions/ · https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/
+- voyage-multimodal-3.5 (native video embeddings, GA Jan 2026): https://blog.voyageai.com/2026/01/15/voyage-multimodal-3-5/
+- Atlas Embedding & Reranking API (Preview, Atlas-minted keys): https://www.mongodb.com/company/blog/product-release-announcements/introducing-the-embedding-and-reranking-api-on-mongodb-atlas
+- MongoDB MCP server (GA): https://www.mongodb.com/docs/mcp-server/overview/
 - Time-series considerations: https://www.mongodb.com/docs/manual/core/timeseries/timeseries-considerations/
 - PyMongo Async vs Motor (migration): https://www.mongodb.com/docs/languages/python/pymongo-driver/current/reference/migration/
 - Data API EOL: https://www.mongodb.com/docs/atlas/app-services/data-api/data-api-deprecation/
