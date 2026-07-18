@@ -1,7 +1,8 @@
 fastapi
 uvicorn[standard]
 pydantic>=2
-pymongo
+pymongo>=4.9          # PyMongo Async (AsyncMongoClient) — Motor is deprecated
+pyjwt[crypto]>=2.10.1 # Auth0 RS256 + PyJWKClient (CONTRACTS §6)
 modal
 python-multipart
 httpx

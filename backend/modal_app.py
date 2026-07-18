@@ -91,9 +91,13 @@ def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
     return out
 
 
-@app.function(image=image)
+@app.function(image=image, volumes={CACHE_DIR: cache})  # Volume mount: C serves/stores media
 @modal.asgi_app()
 def api():
+    import os
+
+    # One media root for all lanes (PERSON_C_PLAN findings #12/#13): the shared Volume.
+    os.environ.setdefault("MEDIA_ROOT", CACHE_DIR)
     from backend.main import app as fastapi_app
 
     return fastapi_app

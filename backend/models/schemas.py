@@ -72,5 +72,40 @@ class TestDetail(BaseModel):
     variants: list[Variant]
     scores: list[ScoreObject]
 
+class WinnerRef(BaseModel):
+    variant_id: str
+    label: str
+
+class TestSummary(BaseModel):
+    """Lightweight per-test shape for /history (CONTRACTS §5) — no N+1 fetches."""
+    test_id: str
+    type: TestType
+    objective: str
+    status: TestStatus
+    created_at: str
+    variant_count: int
+    winner: Optional[WinnerRef] = None
+
 class HistoryResp(BaseModel):
-    tests: list[Test]
+    tests: list[TestSummary]
+
+# --- request bodies (CONTRACTS §5) ---
+
+class CreateTestReq(BaseModel):
+    type: TestType
+    objective: str = "retention"
+
+class VoiceSpec(BaseModel):
+    """One requested voice variant (CONTRACTS §5). `script` required; rest optional."""
+    script: str = Field(min_length=1)
+    label: Optional[str] = None
+    voice_id: Optional[str] = None
+    voice_settings: dict = Field(default_factory=dict)  # speed [0.7,1.2], stability/style [0,1]
+
+class VoiceVariantsReq(BaseModel):
+    base_media_key: str
+    variants: list[VoiceSpec] = Field(min_length=1)
+
+class SuggestReq(BaseModel):
+    base_media_key: str
+    context: str = ""
