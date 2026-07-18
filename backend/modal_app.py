@@ -105,6 +105,49 @@ def mask_test() -> dict:
 
 
 @app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
+def dryrun_eval() -> dict:
+    """Generate a CALM clip and a BUSY clip, score both, and show that the
+    shared-scale normalization separates them while per-clip flattens them.
+    Validates the A/B pipeline before real clips are recorded."""
+    import json
+    import subprocess
+    from pathlib import Path
+
+    from backend.scoring.eval_ab import pair_winner, run_ab_eval
+    from backend.scoring.tribe_model import load_model
+
+    d = Path(CACHE_DIR) / "media" / "dryrun"
+    d.mkdir(parents=True, exist_ok=True)
+    calm, busy = str(d / "calm.mp4"), str(d / "busy.mp4")
+
+    # CALM: static gray frame, silence.
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=gray:s=320x240:d=20:r=25",
+         "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "20",
+         "-pix_fmt", "yuv420p", "-shortest", calm],
+        check=True, capture_output=True,
+    )
+    # BUSY: fast-moving test pattern + audible tone.
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i", "testsrc=duration=20:size=320x240:rate=30",
+         "-f", "lavfi", "-i", "sine=frequency=440:duration=20",
+         "-pix_fmt", "yuv420p", "-shortest", busy],
+        check=True, capture_output=True,
+    )
+
+    model = load_model(CACHE_DIR)
+    results = run_ab_eval(model, {"calm": calm, "busy": busy})
+    cache.commit()
+    verdict = {
+        "shared_scale": pair_winner(results, "calm", "busy", "shared"),
+        "perclip": pair_winner(results, "calm", "busy", "perclip"),
+        "metrics": results,
+    }
+    print("DRY-RUN A/B:\n" + json.dumps(verdict, indent=2))
+    return verdict
+
+
+@app.function(gpu="A100", image=tribe_image, volumes={CACHE_DIR: cache}, timeout=3600)
 def score_test() -> dict:
     """Generate a synthetic clip, score it end-to-end via score(media_key)."""
     import json

@@ -95,3 +95,25 @@ def reduce_to_networks(vertex_timeseries) -> dict:
         raw = np.abs(preds[:, cols]).mean(axis=1)
         series[name] = [round(float(v), 4) for v in _normalize01(raw)]
     return series
+
+
+def raw_networks(vertex_timeseries) -> dict:
+    """Same reduction but WITHOUT per-clip min-max — returns raw mean-abs
+    activation per network per second. Used by the A/B eval so two clips can be
+    compared on a shared scale (per-clip min-max flattens cross-clip differences,
+    since it forces every clip's every network to span 0..1)."""
+    preds = np.asarray(vertex_timeseries, dtype=float)
+    _, n_vertices = preds.shape
+    mask = build_network_mask()
+    if mask.shape[0] != n_vertices:
+        bounds = np.linspace(0, n_vertices, len(NETWORKS) + 1, dtype=int)
+        mask = np.empty(n_vertices, dtype=int)
+        for i in range(len(NETWORKS)):
+            mask[bounds[i] : bounds[i + 1]] = i
+    series = {}
+    for i, name in enumerate(NETWORKS):
+        cols = np.where(mask == i)[0]
+        series[name] = (
+            np.abs(preds[:, cols]).mean(axis=1).tolist() if cols.size else [0.0] * preds.shape[0]
+        )
+    return series
