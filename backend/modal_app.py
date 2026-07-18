@@ -28,8 +28,10 @@ tribe_image = (
     .apt_install("git", "ffmpeg")
     .pip_install("torch>=2.5.1,<2.7", "torchvision>=0.20,<0.22")
     .run_commands(
-        "git clone --depth 1 https://github.com/facebookresearch/tribev2 /root/tribev2",
-        "pip install -e /root/tribev2",
+        # Clone outside /root: the container cwd is /root, so a /root/tribev2
+        # dir would shadow the installed package as an empty namespace package.
+        "git clone --depth 1 https://github.com/facebookresearch/tribev2 /opt/tribev2-src",
+        "pip install -e /opt/tribev2-src",
         "python -m spacy download en_core_web_sm",
     )
     .env({"HF_HOME": f"{CACHE_DIR}/hf"})
