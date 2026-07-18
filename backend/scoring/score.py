@@ -64,7 +64,7 @@ def score(media_key: str) -> dict:
     }
 
 
-def score_batch(media_keys: list) -> list:
+def score_batch(media_keys: list, render_brains: bool = False) -> list:
     """Score ALL variants of a test together on a SHARED scale (CONTRACTS §3).
 
     Per-network reference = 95th percentile of that network's raw activation
@@ -72,13 +72,18 @@ def score_batch(media_keys: list) -> list:
     — network curves, engagement (§3 blend), metrics, region_timeline activations —
     sits on that shared scale, so variants are directly comparable. Numbers are
     only meaningful within this batch, never across tests.
+
+    render_brains=True renders the per-second brain PNGs (brain_frames) — slow
+    (~30-60s/clip), so it's off by default for live scoring and on for precompute.
     """
     model = _get_model()
-    raws = {}  # media_key -> raw per-network series
+    raws, preds_by_key = {}, {}  # media_key -> raw per-network series / raw vertex preds
     for media_key in media_keys:
         events = model.get_events_dataframe(video_path=_resolve_media(media_key))
         preds, _segments = model.predict(events=events)
         raws[media_key] = raw_networks(preds)
+        if render_brains:
+            preds_by_key[media_key] = preds
 
     net_scale = {}
     for net in metrics.NETWORK_WEIGHTS:
@@ -87,18 +92,24 @@ def score_batch(media_keys: list) -> list:
 
     out = []
     for media_key in media_keys:
+        variant_id = Path(media_key).stem
         networks = {
             net: [round(min(1.0, float(v) / net_scale[net]), 4) for v in raws[media_key][net]]
             for net in metrics.NETWORK_WEIGHTS
         }
         engagement = metrics.compute_engagement(networks)
         n_timesteps = len(engagement)
+        brain_frames = []
+        if render_brains:
+            from backend.scoring.brain_render import render_frames
+
+            brain_frames = render_frames(preds_by_key[media_key], variant_id, CACHE_DIR)
         out.append({
-            "variant_id": Path(media_key).stem,
+            "variant_id": variant_id,
             "networks": networks,
             "engagement": engagement,
             "metrics": metrics.compute_metrics(engagement),
-            "brain_frames": [],
+            "brain_frames": brain_frames,
             "region_timeline": region_timeline_from_networks(networks),
             "duration_sec": float(n_timesteps),
             "sample_rate_hz": 1,
