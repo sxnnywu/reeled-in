@@ -19,8 +19,11 @@ def _client() -> ElevenLabs:
     return ElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
 
 
-def generate_reads(script: str, voices=None, out_dir="media/audio") -> list:
-    """Generate one voiceover mp3 per voice. -> [{"voice_id", "audio_path"}]"""
+def generate_reads(script: str, voices=None, out_dir="media/audio", voice_settings=None) -> list:
+    """Generate one voiceover mp3 per voice. -> [{"voice_id", "audio_path"}]
+
+    voice_settings: optional dict, e.g. {"speed": 1.15, "stability": 0.5} — pacing/delivery knobs.
+    """
     voices = voices or DEFAULT_VOICES
     out = resolve(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -32,6 +35,7 @@ def generate_reads(script: str, voices=None, out_dir="media/audio") -> list:
             text=script,
             model_id=MODEL_ID,
             output_format="mp3_44100_128",
+            voice_settings=voice_settings,
         )
         path = out / f"read_{voice_id}.mp3"
         with open(path, "wb") as f:

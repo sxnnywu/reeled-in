@@ -13,11 +13,11 @@ def _variant_id() -> str:
     return "var_" + secrets.token_hex(6)
 
 
-def generate_voice_variants(base_media_key: str, script: str, voices=None) -> list:
+def generate_voice_variants(base_media_key: str, script: str, voices=None, voice_settings=None) -> list:
     """One variant per voice read, muxed onto the base video. -> [Variant dict] (CONTRACTS §4)."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     variants = []
-    for i, read in enumerate(generate_reads(script, voices)):
+    for i, read in enumerate(generate_reads(script, voices, voice_settings=voice_settings)):
         variant_id = _variant_id()
         media_key = overlay(base_media_key, read["audio_path"], variant_id)
         variants.append({
