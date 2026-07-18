@@ -116,6 +116,11 @@ def api():
         "ALLOWED_ORIGINS",
         "https://reeled-in.base44.app,http://localhost:3000,http://localhost:5173",
     )
+    # AUTH FLIP (requested by A once their login was wired): real Auth0 enforcement.
+    # Public config per CONTRACTS §8. Audience is the EXACT API identifier — no
+    # trailing slash (Auth0 matches the string exactly).
+    os.environ.setdefault("AUTH0_DOMAIN", "dev-1xz0uq0mv6hryu17.us.auth0.com")
+    os.environ.setdefault("AUTH0_AUDIENCE", "https://api.reeledin.app")
     from backend.main import app as fastapi_app
 
     return fastapi_app
