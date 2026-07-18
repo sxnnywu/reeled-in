@@ -50,6 +50,19 @@ def _sample_frames(video_path: str, w: int, h: int, fps: int, gray: bool = True)
     return arr.reshape((n, h, w) if gray else (n, h, w, ch))
 
 
+def measure_volume(video_path: str, sr: int = 16000) -> dict:
+    """Audio loudness = RMS energy of the track, in [0,1] (higher = louder).
+    Whole-clip aggregate. No audio track -> 0.0."""
+    cmd = ["ffmpeg", "-i", video_path, "-vn", "-ac", "1", "-ar", str(sr),
+           "-f", "s16le", "-acodec", "pcm_s16le", "pipe:1"]
+    raw = subprocess.run(cmd, capture_output=True).stdout
+    if not raw:
+        return {"volume": 0.0}
+    a = np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+    rms = float(np.sqrt(np.mean(a * a))) if a.size else 0.0
+    return {"volume": round(rms, 5)}
+
+
 def measure_sharpness(video_path: str, w: int = 240, h: int = 240, fps: int = 2) -> dict:
     """Laplacian variance = focus/sharpness. Low = blurry/soft. Model-free."""
     frames = _sample_frames(video_path, w, h, fps, gray=True)

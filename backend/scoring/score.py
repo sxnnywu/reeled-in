@@ -59,6 +59,9 @@ def score(media_key: str) -> dict:
         # PHASE 2: brain_render.render_frames(preds, variant_id) -> per-second PNGs.
         "brain_frames": [],
         "region_timeline": timeline,
+        # observable production signals (family B, CONTRACTS §3 / SCORING_SCIENCE §7).
+        # populated from analyze_objective via signals.collect_signals; {} when unavailable.
+        "signals": {},
         "duration_sec": float(n_timesteps),  # 1 Hz -> length == duration_sec
         "sample_rate_hz": 1,
     }
@@ -111,6 +114,7 @@ def score_batch(media_keys: list, render_brains: bool = False) -> list:
             "metrics": metrics.compute_metrics(engagement),
             "brain_frames": brain_frames,
             "region_timeline": region_timeline_from_networks(networks),
+            "signals": {},  # family B (CONTRACTS §3); filled by signals.collect_signals
             "duration_sec": float(n_timesteps),
             "sample_rate_hz": 1,
         })

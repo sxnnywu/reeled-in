@@ -14,19 +14,9 @@ from backend.db import store
 from backend.util import new_id, now_iso
 
 
-def winner_pipeline(test_id: str, objective: str) -> list:
-    """Server-side winner selection (CONTRACTS §5: max metrics[objective]).
-
-    Shared by MongoRepo (async) and the GPU writer in modal_app (sync pymongo).
-    Deterministic tie-break on variant_id. PERSON_C_PLAN §5.1 — 8.0-compatible.
-    """
-    return [
-        {"$match": {"test_id": test_id}},
-        {"$addFields": {"obj_score": {"$getField": {"field": objective, "input": "$metrics"}}}},
-        {"$sort": {"obj_score": -1, "variant_id": 1}},
-        {"$limit": 1},
-        {"$project": {"_id": 0, "variant_id": 1, "obj_score": 1}},
-    ]
+# DEPRECATED — winner is no longer chosen by max(metrics[objective]). The winner is
+# decided by scoring.signals.rank_scores (brain networks + observable signals, per
+# SCORING_SCIENCE §7). Kept as a no-op reference; do not use for ranking.
 
 
 def _score_doc(test_id: str, score_obj: dict) -> dict:
@@ -107,11 +97,19 @@ class MongoRepo:
             docs[doc["variant_id"]] = _score_wire(doc)
         return [docs[v] for v in test["variant_ids"] if v in docs]
 
-    async def compute_winner(self, test_id: str, objective: str):
-        # PyMongo Async: aggregate() is awaitable and yields the cursor.
-        cursor = await self._db().scores.aggregate(winner_pipeline(test_id, objective))
-        rows = await cursor.to_list(1)
-        return rows[0]["variant_id"] if rows else None
+    async def compute_winner(self, test_id: str, objective: str = None):
+        # Signal-based winner (SCORING_SCIENCE §7): rank on brain networks + observable
+        # signals, NEVER on peak/sustained/retention/overall. `objective` is ignored
+        # (legacy). A single variant has no winner — it's a profile (§3a).
+        from backend.scoring.signals import rank_scores
+
+        docs = {}
+        async for doc in self._db().scores.find({"test_id": test_id}):
+            docs[doc["variant_id"]] = _score_wire(doc)
+        scores = list(docs.values())
+        if len(scores) < 2:
+            return None
+        return rank_scores(scores)["winner_variant_id"]
 
     # --- users ---
     async def upsert_user(self, user: dict) -> None:
@@ -154,13 +152,15 @@ class MemoryRepo:
     async def scores_for(self, test: dict) -> list:
         return [store.SCORES[v] for v in test["variant_ids"] if v in store.SCORES]
 
-    async def compute_winner(self, test_id: str, objective: str):
+    async def compute_winner(self, test_id: str, objective: str = None):
+        # Signal-based winner (SCORING_SCIENCE §7); `objective` ignored (legacy).
+        from backend.scoring.signals import rank_scores
+
         test = store.TESTS[test_id]
-        scored = [(v, store.SCORES[v]["metrics"][objective])
-                  for v in test["variant_ids"] if v in store.SCORES]
-        if not scored:
+        scores = [store.SCORES[v] for v in test["variant_ids"] if v in store.SCORES]
+        if len(scores) < 2:
             return None
-        return sorted(scored, key=lambda kv: (-kv[1], kv[0]))[0][0]  # mirror pipeline tie-break
+        return rank_scores(scores)["winner_variant_id"]
 
     async def upsert_user(self, user: dict) -> None:
         store.USERS.setdefault(user["id"], {**user, "created_at": now_iso()})

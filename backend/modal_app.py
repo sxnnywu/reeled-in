@@ -54,6 +54,54 @@ objective_image = (
 
 
 @app.function(image=objective_image, volumes={CACHE_DIR: cache}, timeout=5400)
+def compare_test(names: str = "IMG_7028,IMG_7029") -> dict:
+    """Full signal-based A/B comparison in one container: measure the observable
+    signals (incl. volume), load each clip's precomputed brain networks from the
+    volume, and rank on the real signals (never peak/sustained/retention/overall)."""
+    import json
+
+    from backend.scoring.face import analyze_face
+    from backend.scoring.hands import analyze_hands
+    from backend.scoring.objective import measure_motion, measure_sharpness, measure_volume
+    from backend.scoring.signals import collect_signals, rank_scores
+    from backend.scoring.transcript import transcribe
+
+    cache.reload()
+
+    def safe(fn):
+        try:
+            return fn()
+        except Exception as e:
+            return {"error": str(e)[:200]}
+
+    scores = []
+    for stem in [n.strip() for n in names.split(",")]:
+        path = f"{CACHE_DIR}/media/eval/{stem}.mp4"
+        obj = {
+            "motion": measure_motion(path)["mean_motion"],
+            "sharpness": measure_sharpness(path)["sharpness"],
+            "volume": measure_volume(path)["volume"],
+            "face": safe(lambda: analyze_face(path, CACHE_DIR)),
+            "hands": safe(lambda: analyze_hands(path, CACHE_DIR)),
+            "speech": safe(lambda: transcribe(path, CACHE_DIR)),
+        }
+        sc = json.load(open(f"{CACHE_DIR}/precomputed/{stem}.json"))
+        sc["signals"] = collect_signals(obj)
+        scores.append(sc)
+
+    r = rank_scores(scores)
+    result = {
+        "winner": r["winner_variant_id"], "decisive": r["decisive"],
+        "ranking": r["ranking"],
+        "network_advantage": r.get("network_advantage"),
+        "signal_advantage": r.get("signal_advantage"),
+        "signals": {s["variant_id"]: s["signals"] for s in scores},
+    }
+    print("COMPARE_RESULT:\n" + json.dumps(result, indent=2))
+    return result
+
+
+@app.function(image=objective_image, volumes={CACHE_DIR: cache}, timeout=5400)
 def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
     """Run all model-free signals on the clips: motion, sharpness (blur), object
     clarity (YOLO), facial expression (MediaPipe), speech transcript (Whisper).
@@ -64,7 +112,7 @@ def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
     from backend.scoring.face import analyze_face
     from backend.scoring.hands import analyze_hands
     from backend.scoring.objects import detect_objects
-    from backend.scoring.objective import measure_motion, measure_sharpness
+    from backend.scoring.objective import measure_motion, measure_sharpness, measure_volume
     from backend.scoring.transcript import transcribe
 
     folder = Path(CACHE_DIR) / "media" / subdir
@@ -82,6 +130,7 @@ def analyze_objective(subdir: str = "eval", names: str = "") -> dict:
         out[name] = {
             "motion": measure_motion(path)["mean_motion"],
             "sharpness": measure_sharpness(path)["sharpness"],
+            "volume": measure_volume(path)["volume"],
             "clarity": safe(lambda: detect_objects(path, CACHE_DIR)),
             "face": safe(lambda: analyze_face(path, CACHE_DIR)),
             "hands": safe(lambda: analyze_hands(path, CACHE_DIR)),
@@ -189,8 +238,9 @@ def score_test_gpu(test_id: str) -> dict:
 
     from pymongo import MongoClient
 
-    from backend.db.repo import winner_pipeline, _score_doc
+    from backend.db.repo import _score_doc
     from backend.scoring.score import score_batch
+    from backend.scoring.signals import rank_scores
     from backend.util import now_iso
 
     cache.reload()  # see media committed by the api() container (writer commits, reader reloads)
@@ -211,8 +261,9 @@ def score_test_gpu(test_id: str) -> dict:
                 {"variant_id": variant["_id"]}, _score_doc(test_id, result), upsert=True
             )
 
-        rows = list(d.scores.aggregate(winner_pipeline(test_id, test.get("objective", "retention"))))
-        winner_id = rows[0]["variant_id"] if rows else None
+        # Signal-based winner (SCORING_SCIENCE §7) — ranks on brain networks + observable
+        # signals, not peak/sustained/retention/overall. Single variant => no winner (profile).
+        winner_id = rank_scores(results)["winner_variant_id"] if len(results) >= 2 else None
         d.tests.update_one(
             {"_id": test_id},
             {"$set": {"status": "complete",

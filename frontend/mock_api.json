@@ -293,7 +293,14 @@
         }
       ],
       "duration_sec": 18.0,
-      "sample_rate_hz": 1
+      "sample_rate_hz": 1,
+      "signals": {
+        "face_expression": 0.6,
+        "speech_rate": 2.2,
+        "hand_gesture": 0.2,
+        "motion": 0.05,
+        "clarity": 700.0
+      }
     },
     {
       "variant_id": "var_demoB",
@@ -556,20 +563,45 @@
         }
       ],
       "duration_sec": 18.0,
-      "sample_rate_hz": 1
+      "sample_rate_hz": 1,
+      "signals": {
+        "face_expression": 0.6,
+        "speech_rate": 2.2,
+        "hand_gesture": 0.2,
+        "motion": 0.05,
+        "clarity": 700.0
+      }
     }
   ],
   "analysis": {
     "mode": "comparison",
-    "objective": "retention",
     "ranking": [
-      { "variant_id": "var_demoB", "label": "B (hook 2)", "score": 1.0 },
-      { "variant_id": "var_demoA", "label": "A (hook 1)", "score": 0.87 }
+      {
+        "variant_id": "var_demoB",
+        "label": "B (hook 2)",
+        "index": 0.548
+      },
+      {
+        "variant_id": "var_demoA",
+        "label": "A (hook 1)",
+        "index": 0.452
+      }
     ],
+    "winner_variant_id": "var_demoB",
     "network_advantage": {
-      "default_mode": 0.12, "visual": 0.04, "language": 0.02, "auditory": -0.01, "motion": 0.0
+      "default_mode": 0.12,
+      "visual": 0.04,
+      "language": 0.02,
+      "auditory": -0.01,
+      "motion": 0.0
     },
-    "decisive_network": "default_mode",
-    "signal_advantage": null
+    "signal_advantage": {
+      "face_expression": 0.22,
+      "speech_rate": 0.6,
+      "hand_gesture": 0.05,
+      "motion": -0.03,
+      "clarity": 120.0
+    },
+    "decisive": "signal:face_expression"
   }
 }

@@ -210,7 +210,8 @@ maps to a separate behavioral literature:
 |---|---|---|---|
 | **facial expression** (smile, mouth-open, brows) | affect on the creator's face | facial/smile responses predict ad liking + purchase intent at scale; facial coding predicts ad & brand effects | McDuff & el Kaliouby [18]; Frontiers 2023 [19] |
 | **hand gestures** | gesture presence + motion | gesturing raises persuasion, attention and communication quality | *J. Marketing Research* 2025 [20]; UBC 2025 [21] |
-| **speech rate / vocal expressiveness** ("language volume") | words/sec + prosody | prosodic / vocal expressiveness predicts affective engagement in video | Frontiers 2025 [22]; IEEE TCSS [23] |
+| **speech rate** | words/sec | speech rate is part of vocal expressiveness, which predicts affective engagement | Frontiers 2025 [22]; IEEE TCSS [23] |
+| **volume / vocal energy** | audio loudness (RMS) | vocal arousal / loudness is part of the prosody that predicts affective engagement | Frontiers 2025 [22]; IEEE TCSS [23] |
 | **motion / cuts / pacing** | movement + edit density | scene cuts and visual complexity drive attention; on short-form, cut style shapes likes vs. completion — and *too much* pacing hurts sustained engagement | *JAMS* 2025 [24]; short-form jump-cut study [25] |
 | **visual clarity / sharpness** | focus vs. blur | quality gate (blur = harder to process); weak *direct* engagement evidence — treat as a clarity check, not an engagement driver |
 

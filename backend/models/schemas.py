@@ -39,6 +39,7 @@ class ScoreObject(BaseModel):
     metrics: Metrics
     brain_frames: list[str] = Field(default_factory=list)      # media_keys, one/sec
     region_timeline: list[RegionTick] = Field(default_factory=list)
+    signals: dict[str, float] = Field(default_factory=dict)     # family B (§7): face_expression, speech_rate, hand_gesture, motion, clarity
     duration_sec: float
     sample_rate_hz: int = SAMPLE_RATE_HZ
 
@@ -69,13 +70,14 @@ class User(BaseModel):
     created_at: str
 
 class Analysis(BaseModel):
-    """How the frontend presents this test (CONTRACTS §3a). `mode` is the switch."""
+    """How the frontend presents this test (CONTRACTS §3a). `mode` is the switch.
+    Comparison ranks on the real signals (§7), never on peak/sustained/retention/overall."""
     mode: str                                    # "profile" | "comparison"
-    objective: Optional[str] = None              # comparison only
-    ranking: Optional[list] = None               # [{variant_id, label, score}], objective desc
-    network_advantage: Optional[dict] = None     # winner minus runner-up, per network (§7 family A)
-    decisive_network: Optional[str] = None       # network that most separated the winner
-    signal_advantage: Optional[dict] = None      # §7 family B (production signals) — awaits B
+    ranking: Optional[list] = None               # [{variant_id, label, index}], best first (index = signal rank)
+    winner_variant_id: Optional[str] = None      # comparison only
+    network_advantage: Optional[dict] = None     # winner − runner-up, per brain network (§7 family A)
+    signal_advantage: Optional[dict] = None      # winner − runner-up, per production signal (§7 family B)
+    decisive: Optional[str] = None               # component that most separated the winner ("brain:*" | "signal:*")
 
 class TestDetail(BaseModel):
     test: Test
