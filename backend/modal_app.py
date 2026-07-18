@@ -33,6 +33,7 @@ tribe_image = (
         "pip install -e /opt/tribev2-src",
         "python -m spacy download en_core_web_sm",
     )
+    .pip_install("nilearn")  # Destrieux atlas for the vertex->network mapping
     .env({"HF_HOME": f"{CACHE_DIR}/hf"})
     .add_local_python_source("backend")
 )
@@ -83,6 +84,23 @@ def load_test() -> dict:
     cache.commit()
     info = {"loaded": True, "device": "cuda" if torch.cuda.is_available() else "cpu"}
     print("TRIBE load test:", info)
+    return info
+
+
+@app.function(image=tribe_image, volumes={CACHE_DIR: cache}, timeout=1800)
+def mask_test() -> dict:
+    """Build the Destrieux vertex->network mask and report vertex counts per
+    network (no GPU needed)."""
+    import numpy as np
+
+    from backend.scoring.networks import NETWORKS, build_network_mask
+
+    mask = build_network_mask()
+    cache.commit()
+    counts = {name: int((mask == i).sum()) for i, name in enumerate(NETWORKS)}
+    counts["unassigned"] = int((mask == -1).sum())
+    info = {"total_vertices": int(mask.shape[0]), "per_network": counts}
+    print("Network mask:", info)
     return info
 
 
