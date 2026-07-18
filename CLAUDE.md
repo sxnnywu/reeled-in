@@ -40,7 +40,7 @@ The system is one pipeline, split across three workstreams. The full picture req
 
 Work is divided by workstream, not person. Each `workstreams/*/PLAN.md` lists what it owns, does not own, and its deliverable file paths. Do not modify another workstream's files; code against the contract/stub and record the dependency in your PLAN.md "Handoff Notes".
 
-- **Orchestration** — FastAPI app, spec ingestion, fan-out controller, sandbox loop runner, event emission, the example demo loops (e.g. "FinFlow" 3-agent transactional loop).
+- **Orchestration** — FastAPI app, spec ingestion (inline + GitHub/folder via `POST /api/specs/ingest`), fan-out controller, sandbox loop runner, instrumentation adapter, event emission, the demo loop (morning-triage 6-agent CI-triage loop, Layer 1).
 - **Data & Storage** — Mongo (Motor) setup/indexes, event collector, aggregation pipelines, failure clustering + Gemini findings, report assembly, WebSocket.
 - **Interface & Design** — dashboard (Base44 candidate) fleet/traffic/report views, visual design from existing templates, demo narrative. Owned by the presenter/designer; technical members assist on API wiring only.
 
