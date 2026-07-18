@@ -32,7 +32,7 @@ Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio 
 
 **Out: Phoebe** — Reeled In is an analysis tool, not real-world coordination; forcing it in = scope creep.
 
-**Also locked:** a direct **Gemini** API call powers the hook/copy suggestions (claims the MLH Gemini prize); **Backboard** owns RAG/memory + the explainer. (Auth0 dropped — Base44 native login.)
+**Also locked:** a direct **Gemini** API call powers the hook/copy suggestions (claims the MLH Gemini prize); **Backboard** owns RAG/memory + the explainer. **Auth0** handles login (client-side SPA SDK; also wins the MLH Auth0 prize) — Base44 native login can't be verified by the external backend on the free plan.
 
 ## Honesty / caveats (put these in the pitch — they signal we know the science)
 - **Activation ≠ outcome.** A region lighting up ≠ "this ad sells." We present a neural *engagement signal*, a proxy.
@@ -48,7 +48,7 @@ Feed each variant into TRIBE v2 (predicts fMRI brain responses to video / audio 
 - One HT6 track only (Hardware / Environmental / Beginner) + unlimited sponsor + MLH tracks.
 
 ## Open decisions
-- **Auth:** DECIDED — Base44 native login (Auth0 dropped).
+- **Auth:** DECIDED — **Auth0** (client-side SPA SDK; Base44 app is Public). Base44 native login dropped — not externally verifiable on the free plan (see CONTRACTS §6).
 - **Gemini:** DECIDED — direct Gemini call for hook/copy suggestions (Backboard owns RAG/memory + the explainer).
 - **3D brain viz** vs charts-only for the results screen.
 - **Video-editing auto-gen** (reorder / pace / music) — stretch only; music swap easiest first.

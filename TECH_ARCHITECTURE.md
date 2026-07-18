@@ -33,7 +33,7 @@ Last updated: 2026-07-18. Companion to `OVERVIEW.md` and `PRD.md`.
 ## Components in detail
 
 ### 1. Base44 — frontend + auth
-Owns: upload screen, the voice-script form, the results/winner screen (including the **side-by-side player**: video + brain-frame flipbook synced per second + the live explainer caption), and login (Base44 native auth). Calls the FastAPI backend over HTTPS with the logged-in user's token. A thin Base44 backend function can act as a secure courier (holds the API key server-side) so no secret touches the browser.
+Owns: upload screen, the voice-script form, the results/winner screen (including the **side-by-side player**: video + brain-frame flipbook synced per second + the live explainer caption), and login (**Auth0 client-side SPA SDK**; the Base44 app is Public). Calls the FastAPI backend directly over HTTPS with the user's Auth0 JWT as a Bearer token; C verifies it against Auth0's JWKS and CORS locks the origin. No Base44 backend-function courier — backend functions are Builder-plan-only and we stay free (see CONTRACTS §6).
 
 ### 2. FastAPI on Modal — the Python backend
 The orchestrator; where all real logic and secrets live. Runs as a Modal ASGI web endpoint (CPU, cheap, scale-to-zero) that invokes the GPU function only when scoring is needed.
@@ -58,7 +58,7 @@ Three jobs: (a) suggest hook/CTA/copy variants; (b) RAG over a creator's past te
 Voice A/B flow: creator submits a voiceover/CTA script -> FastAPI calls ElevenLabs for N reads (different voices/tone/pace) -> each read is muxed onto the base video via ffmpeg (simple audio swap) -> each variant scored by TRIBE (drives auditory/language/default-mode). The only auto-generation in the MVP.
 
 ### 7. Gemini
-Gemini: a direct Gemini API call powers the hook/copy suggestions (D owns it) — claims the MLH Gemini prize. Backboard owns RAG/memory + the explainer. Auth: Base44 native login (no Auth0).
+Gemini: a direct Gemini API call powers the hook/copy suggestions (D owns it) — claims the MLH Gemini prize. Backboard owns RAG/memory + the explainer. Auth: **Auth0** client-side SPA SDK (also claims the MLH Auth0 prize) — see CONTRACTS §6.
 
 ## The scoring pipeline (what "winner" means)
 Per variant: TRIBE -> 5 network time-series (visual, auditory, language, motion, default-mode) -> metrics: **peak** engagement, **sustained** engagement (area under curve), and **retention through the CTA** (does engagement hold to the end vs collapse). Winner = highest composite on the objective the creator picks (e.g. "hold attention to the CTA"). Caveats: activation != outcome; ~1 Hz temporal smoothing (see overview).
@@ -66,12 +66,13 @@ Per variant: TRIBE -> 5 network time-series (visual, auditory, language, motion,
 The same per-second predictions feed the **brain animation**: each second's ~20k-vertex map is rendered to a brain PNG (`brain_frames`, the flipbook) and reduced to a top-region label (`region_timeline`); D's explainer narrates it. Rendering is ~1 Hz — the frontend interpolates between frames for smooth playback.
 
 ## Security / secrets
-All API keys (Modal, Mongo, Backboard, ElevenLabs, Gemini) live server-side in the Python backend (and/or a Base44 backend-function secret store). The browser never sees a secret. That is the only reason the Base44 "courier" function exists.
+All third-party API keys (Modal, Mongo, Backboard, ElevenLabs, Gemini) live server-side in the Python backend. The browser never sees them. The frontend holds only the user's own Auth0 JWT plus public Auth0 config; C authenticates each request by verifying that JWT against Auth0's JWKS, with CORS restricting the origin. (No Base44 "courier" function — backend functions are Builder-plan-only, and we stay free.)
 
 ## Sponsor -> component map
 | Sponsor | Where it lives |
 |---|---|
-| Base44 | Frontend + auth + the launch/validate story ($2k) |
+| Base44 | Frontend (Public app) + the launch/validate story ($2k) |
+| Auth0 | Login — client-side SPA SDK; C verifies the JWT via JWKS (MLH Auth0 prize) |
 | ElevenLabs | Voice-variant generation (Voice A/B) |
 | MongoDB Atlas | System of record (via pymongo) |
 | Backboard | LLM + memory/RAG layer + the brain-animation explainer |
@@ -79,7 +80,7 @@ All API keys (Modal, Mongo, Backboard, ElevenLabs, Gemini) live server-side in t
 | TRIBE (ours) | Modal GPU pipeline — the technical-difficulty core |
 
 ## Open decisions
-- Auth: DECIDED — Base44 native login (no Auth0).
+- Auth: DECIDED — **Auth0** client-side SPA SDK (Base44 app Public); C verifies the JWT via Auth0 JWKS. See CONTRACTS §6.
 - Gemini: DECIDED — direct call for suggestions (Backboard owns RAG/memory + explainer).
 - 3D brain viz vs charts-only.
 - Video-editing auto-gen (stretch); which variable first.

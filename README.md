@@ -61,7 +61,7 @@ Why two "backends": Base44 can't run heavy ML Python or reliably reach Atlas fro
 - **ElevenLabs** — powers the Voice A/B test type.
 - **MongoDB Atlas** — system of record.
 - **Backboard** — LLM + memory/RAG layer.
-- *Locked:* a direct Gemini call powers suggestions (MLH prize); Backboard owns RAG/memory + explainer. Auth0 dropped — Base44 native login.
+- *Locked:* a direct Gemini call powers suggestions (MLH prize); Backboard owns RAG/memory + explainer. **Auth0** handles login (client-side SPA SDK; MLH Auth0 prize) — Base44 native login isn't externally verifiable on the free plan.
 - **Out:** Phoebe — analysis tool, not real-world coordination; forcing it in is scope creep.
 
 ## Team (4) — build split
@@ -114,7 +114,7 @@ Full phase plan, repo layout with per-file owners, and the cross-person dependen
 
 ## Open decisions
 
-- Auth: DECIDED — Base44 native login (no Auth0)
+- Auth: DECIDED — Auth0 (client-side SPA SDK; Base44 app Public)
 - Gemini: DECIDED — direct call for suggestions (Backboard owns RAG/memory + explainer)
 - 3D brain viz vs charts-only results screen
 - Video-editing auto-gen (stretch; music swap first if attempted)

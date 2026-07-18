@@ -60,4 +60,4 @@ All four build against mocks from hour 1; real wiring happens at integration.
 - Slack (B lands early, or D's lane is light) → precompute more demo variants, hand-validate a few examples (pitch credibility), polish the winner-reveal.
 
 ## Auth (small)
-Base44 native login — DECIDED (no Auth0). A (Kimi) builds the login; C (Seb) verifies the token.
+**Auth0 (LOCKED)** — client-side Auth0 SPA SDK in the (Public) Base44 app; A (Kimi) wires the login, C (Seb) verifies the JWT via Auth0's JWKS. Base44 native login was dropped — it can't be verified by C's external backend on the free plan (see CONTRACTS §6). Bonus: wins the MLH Auth0 prize.
