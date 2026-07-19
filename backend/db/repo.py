@@ -14,9 +14,9 @@ from backend.db import store
 from backend.util import new_id, now_iso
 
 
-# DEPRECATED — winner is no longer chosen by max(metrics[objective]). The winner is
-# decided by scoring.signals.rank_scores (brain networks + observable signals, per
-# SCORING_SCIENCE §7). Kept as a no-op reference; do not use for ranking.
+# The winner is decided by scoring.signals.rank_scores (brain networks + observable
+# signals, per SCORING_SCIENCE §7). The old max(metrics[objective]) selection and the
+# `objective` field it relied on have both been removed.
 
 
 def _score_doc(test_id: str, score_obj: dict) -> dict:
@@ -97,10 +97,9 @@ class MongoRepo:
             docs[doc["variant_id"]] = _score_wire(doc)
         return [docs[v] for v in test["variant_ids"] if v in docs]
 
-    async def compute_winner(self, test_id: str, objective: str = None):
+    async def compute_winner(self, test_id: str):
         # Signal-based winner (SCORING_SCIENCE §7): rank on brain networks + observable
-        # signals, NEVER on peak/sustained/retention/overall. `objective` is ignored
-        # (legacy). A single variant has no winner — it's a profile (§3a).
+        # signals. A single variant has no winner — it's a profile (§3a).
         from backend.scoring.signals import rank_scores
 
         docs = {}
@@ -152,8 +151,8 @@ class MemoryRepo:
     async def scores_for(self, test: dict) -> list:
         return [store.SCORES[v] for v in test["variant_ids"] if v in store.SCORES]
 
-    async def compute_winner(self, test_id: str, objective: str = None):
-        # Signal-based winner (SCORING_SCIENCE §7); `objective` ignored (legacy).
+    async def compute_winner(self, test_id: str):
+        # Signal-based winner (SCORING_SCIENCE §7).
         from backend.scoring.signals import rank_scores
 
         test = store.TESTS[test_id]

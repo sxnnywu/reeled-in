@@ -39,7 +39,7 @@ def main():
     print("0 health:", r.json())
 
     r = requests.post(f"{base}/tests", headers=H, timeout=60,
-                      json={"type": "voice", "objective": "retention", "name": "E2E smoke"})
+                      json={"type": "voice", "name": "E2E smoke"})
     if r.status_code == 401:
         print("E2E FAILED: 401 unauthorized — this server enforces Auth0; set E2E_TOKEN "
               "to a real access token (see module docstring)")
@@ -83,7 +83,7 @@ def main():
 
     sc = full["scores"][0]
     print("6 winner:", full["test"]["winner_variant_id"],
-          "| metrics[0]:", sc["metrics"], "| curve len:", len(sc["engagement"]))
+          "| signals[0]:", sc.get("signals"), "| curve len:", len(sc["engagement"]))
 
     r = requests.post(f"{base}/tests/{tid}/explain", headers=H, timeout=300)
     first = list(r.json()["explanations"].values())[0][:2]

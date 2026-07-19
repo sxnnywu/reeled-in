@@ -19,12 +19,12 @@ Last updated: 2026-07-18.
 ## 2. Canonical vocabulary (exact spellings — copy/paste these)
 - **The 5 networks** (fixed order, exact keys): `visual`, `auditory`, `language`, `motion`, `default_mode`.
   - Never abbreviate — `dmn`, `defaultMode`, `aud` are all WRONG.
-- **The 4 metrics:** `peak`, `sustained`, `retention`, `overall`. Each a float [0,1].
+- **The 4 metrics (`peak`, `sustained`, `retention`, `overall`) — REMOVED (2026-07-19).** They never ranked the winner (that's the real signals — §3a) and are no longer computed, stored, or sent. Not on the Score Object anymore. Do not reintroduce them or read them on the frontend. Engagement is represented only by the `engagement` composite curve (§3).
 - **Test types:** `upload`, `voice`.
 - **Test status:** `pending`, `scoring`, `complete`, `failed`.
-- **Objective** — **DEPRECATED / legacy.** It used to name the metric that decided the winner; it no longer affects ranking (the winner is decided by the real signals — §3a, `SCORING_SCIENCE.md` §7). The field may still be sent on `POST /tests` for back-compat but is ignored for scoring; do not build new behaviour on it.
+- **Objective** — **REMOVED (2026-07-19).** It used to name the metric that decided the winner. The winner is decided by the real signals (§3a, `SCORING_SCIENCE.md` §7), so the field is gone from the API entirely: not on `POST /tests`, not on `Test`, not on `TestSummary`. Do not send or read it. (Unrelated: `scoring/objective.py` / `analyze_objective` — the model-free production-signals toolkit — is a different thing and stays.)
 - **Brain regions** (for the animation; snake_case, each maps to a network): `primary_visual` & `fusiform_face_area` (visual), `motion_mt` (motion), `primary_auditory` (auditory), `broca_area` (language), `prefrontal_dmn` (default_mode). B may extend this list here.
-- **Constants:** `SAMPLE_RATE_HZ = 1`, `DB_NAME = "reeled_in"`, `API_BASE = "/api"`. `NETWORKS` and `METRICS` are the ordered lists above.
+- **Constants:** `SAMPLE_RATE_HZ = 1`, `DB_NAME = "reeled_in"`, `API_BASE = "/api"`. `NETWORKS` is the ordered list above. (`METRICS` constant removed with the 4 metrics.)
 
 ## 3. The Score Object (the most important shape)
 The canonical payload **B produces, C stores, A renders.** Exact shape:
@@ -39,7 +39,6 @@ The canonical payload **B produces, C stores, A renders.** Exact shape:
     "default_mode": [0.0, 0.08, 0.15]
   },
   "engagement": [0.0, 0.10, 0.28],
-  "metrics": { "peak": 0.82, "sustained": 0.61, "retention": 0.74, "overall": 0.70 },
   "brain_frames": ["media/var_1a2b3c4d5e6f_brain_000.png", "media/var_1a2b3c4d5e6f_brain_001.png"],
   "region_timeline": [
     { "t": 0, "top_network": "visual",   "top_region": "fusiform_face_area", "activation": 0.82 },
@@ -52,21 +51,21 @@ The canonical payload **B produces, C stores, A renders.** Exact shape:
 ```
 Rules:
 - Every `networks.<name>` array has the **same length** = `round(duration_sec * sample_rate_hz)`, aligned to t=0 (video start), one sample per second.
-- All array values and all metrics are floats in **[0,1]**, higher = more engagement. Already normalized by B — **A does not re-normalize.**
+- All array values are floats in **[0,1]**, higher = more engagement. Already normalized by B — **A does not re-normalize.**
 - **Normalization is JOINT per test (shared scale):** all variants of a test are scored together in one batch, normalized against one shared reference (batch 95th percentile — see `NORMALIZATION_DECISION.md`). Consequences: a Score Object's numbers are comparable **only within its own test** (never compare scores across tests); C's `POST /tests/{test_id}/score` must send the test's variants to B as **one batch call**, not per-variant calls. (Replaces per-clip normalization, which made cross-variant winners unreliable — reproduced live on generated variants 2026-07-18.)
 - `engagement`: the composite engagement curve — the weighted blend of the 5 networks; same length/alignment as the network arrays, floats [0,1]. The UI plots this **plus all 5 individual network curves**.
 - `signals`: the **observable production signals** (family B, `SCORING_SCIENCE.md` §7), measured model-free from the pixels + audio via `analyze_objective` and collected by `scoring/signals.collect_signals`: `face_expression` [0,1], `speech_rate` (words/sec), `hand_gesture` (0..~0.5), `motion` (0..~0.3), `clarity` (Laplacian variance, unbounded). Raw + interpretable; the comparison normalizes them pairwise. `{}` when the objective toolkit hasn't run.
 
-**`metrics` are DESCRIPTIVE curve stats — NOT the ranking basis.** `peak`/`sustained`/`retention`/`overall` describe the shape of one clip's engagement curve. They are **never** used to pick a comparison winner (that's the signals — see §3a and `SCORING_SCIENCE.md` §7) and are **never** shown as a single-video grade (§3a). Formulas (all [0,1]): `peak = max(E)`; `sustained = mean(E)`; `retention = last_third / (last_third + first_third)` (0.5 = held level, >0.5 = grew, <0.5 = dropped — bounded, non-saturating); `overall = 0.5·sustained + 0.3·retention + 0.2·peak`. These are a documented proxy, not ground truth.
+**The scalar metrics `peak`/`sustained`/`retention`/`overall` were REMOVED (2026-07-19).** They never ranked the winner (that's the signals — §3a / `SCORING_SCIENCE.md` §7) and are no longer computed, stored, or on the Score Object. There is no `metrics` field. Engagement is represented only by the `engagement` composite curve above; the winner is decided by `scoring/signals.rank_scores`.
 - Missing/failed score → the variant's score is `null` and the test carries `status: "failed"`; A must handle null.
 - `brain_frames`: one rendered brain PNG per second (media_keys, ordered t=0..N) for the flipbook; same length as the network arrays. Produced by B (nilearn/pycortex).
 - `region_timeline`: one entry per second, aligned to `brain_frames` and the network arrays. `top_network` ∈ NETWORKS, `top_region` ∈ the region list (§2), `activation` a float [0,1]. **Data only, from B** — the plain-English captions come from D's explainer (see §5 `/explain`).
 
 ### 3a. Display semantics (binding — codifies `SCORING_SCIENCE.md` §6)
 The same Score Object is **presented two different ways** depending on variant count. The frontend keys off `len(variants)`:
-- **Single variant → PROFILE, no grade.** Show ONLY the 5 network curves, the `engagement` curve, and `region_timeline` / `brain_frames`. **Do NOT surface `overall`, a winner, a letter/number grade, or `retention` as a verdict.** For one clip nothing is being compared and "more activation ≠ better," so a composite is meaningless. `overall` and `winner_variant_id` may still be *present* in the payload (the API always computes them) but MUST NOT be shown in single-variant mode.
+- **Single variant → PROFILE, no grade.** Show ONLY the 5 network curves, the `engagement` curve, and `region_timeline` / `brain_frames`. **Do NOT surface a winner or a letter/number grade.** For one clip nothing is being compared and "more activation ≠ better," so a composite grade is meaningless. `winner_variant_id` is `null` for single-variant tests anyway.
 - **Two+ variants → RANKING.** Show the winner, the per-network **and** per-signal deltas (which brain system + which production signal separated them), and surface the "why this ranking" rationale + citations from `SCORING_SCIENCE.md` beside the result (the ranking is only credible with the research shown). Per `SCORING_SCIENCE.md` §7 the ranking basis is the **real measured signals** — the 5 brain networks **plus** the observable production signals (`signals` in §3: face/hands/speech/motion/clarity), **never** `peak/sustained/retention/overall`. The winner is computed by `scoring/signals.rank_scores` (the single source of truth). The `GET /tests/{id}` response carries an **`analysis`** object (`mode`, `ranking`, `winner_variant_id`, `network_advantage`, `signal_advantage`, `decisive`) computed server-side by `backend/analysis.build_analysis`. Full frontend build sheet: `VISUALIZATION_SPEC.md`.
-- **Metrics are normalized proxy values in [0,1], NOT percentages, and NOT the ranking basis.** Never render `retention: 0.74` as "74% retention" or `overall: 0.69` as a "69% grade." They are *directional proxy* curve-shape stats (`SCORING_SCIENCE.md` §5). `retention` is a bounded share (final-third ÷ (final+first)); 0.5 = held, >0.5 = grew, <0.5 = dropped. Never present any of them as a single-video grade or a comparison verdict.
+- **The `peak/sustained/retention/overall` metrics are gone (2026-07-19).** They are no longer in the payload — do not render them anywhere. Do not resurrect a single-number "grade." Comparison shows the `engagement` curves + the signal/network advantages from `analysis`; profile shows the curves only.
 
 ## 4. Entities / MongoDB collections
 DB = `reeled_in`. Collections are **plural snake_case**. `_id` holds the prefixed string ID.
@@ -79,11 +78,11 @@ DB = `reeled_in`. Collections are **plural snake_case**. `_id` holds the prefixe
 ```json
 { "_id": "test_...", "user_id": "usr_...", "type": "upload",
   "name": "Summer Drop — Hook Battle",
-  "objective": "retention", "status": "pending",
+  "status": "pending",
   "variant_ids": ["var_...", "var_..."], "winner_variant_id": null,
   "created_at": "...", "updated_at": "..." }
 ```
-`name` = optional user-given test title (string, nullable). `null` when the creator didn't name the test — A renders a derived fallback (type · objective · date).
+`name` = optional user-given test title (string, nullable). `null` when the creator didn't name the test — A renders a derived fallback (type · date).
 **`variants`**
 ```json
 { "_id": "var_...", "test_id": "test_...", "label": "A",
@@ -94,7 +93,7 @@ DB = `reeled_in`. Collections are **plural snake_case**. `_id` holds the prefixe
 **`scores`** (one per variant; mirrors the Score Object)
 ```json
 { "_id": "score_...", "variant_id": "var_...", "test_id": "test_...",
-  "networks": { }, "metrics": { },
+  "networks": { }, "engagement": [ ], "signals": { },
   "duration_sec": 18.0, "sample_rate_hz": 1, "created_at": "..." }
 ```
 `label` = the human tag shown in the UI ("A"/"B" or "Hook v2"). `params` = a free-form bag of the knobs that define the variant (voice, music, etc.).
@@ -104,7 +103,7 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/tests` | `{ type, objective?, name? }` | `Test` |
+| POST | `/api/tests` | `{ type, name? }` | `Test` |
 | POST | `/api/tests/{test_id}/variants` | multipart: `file`, `label`, `params?` | `Variant` |
 | POST | `/api/tests/{test_id}/base-media` | multipart: `file` | `{ media_key }` |
 | POST | `/api/tests/{test_id}/voice-variants` | `{ base_media_key, variants: [VoiceSpec] }` | `{ variants: [Variant] }` |
@@ -123,13 +122,12 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
   `script` required. `voice_id` optional (backend picks a distinct default per spec). `voice_settings` optional, floats — `speed` [0.7,1.2], `stability`/`style` [0,1]. `label` optional (defaults "A","B","C"...). The spec is echoed back in the created Variant's `params`.
   `/suggest`-returned VoiceSpecs additionally carry **`note`** — one plain-language sentence naming the creative bet the variant tests ("Tests a question-style hook..."). A shows it under each suggestion card; if the user renders the suggestion, pass it through so it lands in `params.note`.
 - `Test`, `Variant`, `ScoreObject` are exactly the shapes in §3–§4.
-- The winner is decided by **`scoring/signals.rank_scores`** (brain networks + observable signals, §3a / `SCORING_SCIENCE.md` §7) — **not** by the legacy `objective` metric. The backend sets `winner_variant_id` at score time; a single-variant test has no winner (profile, §3a).
+- The winner is decided by **`scoring/signals.rank_scores`** (brain networks + observable signals, §3a / `SCORING_SCIENCE.md` §7). The backend sets `winner_variant_id` at score time; a single-variant test has no winner (profile, §3a).
 - **Base media (Voice A/B):** `POST /base-media` uploads the base video once → `{ media_key }`; pass it as `base_media_key` to `/voice-variants`. Upload-mode variants still POST their file straight to `/variants`.
 - **Scoring is async (async request-reply pattern):** `POST /score` returns immediately with the Test's current `status` (`scoring`, or `complete` when precomputed). **A polls `GET /tests/{test_id}` every ~1.5 s until `status` ∈ {`complete`, `failed`}** (client timeout ~60 s). Winner + scores are present once `complete`.
 - **`TestSummary`** — the lightweight per-test shape `/history` returns (avoids N+1 fetches):
   ```json
   { "test_id": "test_...", "name": "Summer Drop — Hook Battle", "type": "upload",
-    "objective": "retention",
     "status": "complete", "created_at": "...", "variant_count": 2,
     "winner": { "variant_id": "var_...", "label": "B" } }
   ```
@@ -191,3 +189,5 @@ Common codes: `bad_request`, `unauthorized`, `not_found`, `scoring_failed`, `int
 - 2026-07-18 — tests gain an **optional nullable `name`** (requested by A for Results/History titles): create body is `{ type, objective?, name? }` (§5); stored on the §4 `tests` doc; returned on `Test` and `TestSummary`. Omitted → `null`; A renders a derived fallback, so no default server-side.
 - 2026-07-18 — **§3a Display semantics added (binding), codifying `SCORING_SCIENCE.md` §6** after a scoring-science alignment review (C): single-variant = profile only (no `overall`/winner/grade/retention-verdict); 2+ = ranking + inline "why this ranking" research panel; metrics are [0,1] proxy scores, **not** percentages (don't show `retention: 1.0` as "100%"). Also flags the `retention` 1.0-clamp saturation for B to fix and recommends `objective: overall` for comparison winners meanwhile. Supersedes the buried single-variant note above with a full, prominent rule.
 - 2026-07-18 — **Signal-based comparison (B) — completes §3a / `SCORING_SCIENCE.md` §7.** Score Object gains **`signals`** (§3: observable production signals — face_expression, speech_rate, hand_gesture, motion, clarity). The A/B winner is now decided by **`scoring/signals.rank_scores`** (brain networks + these signals), **not** by `peak/sustained/retention/overall` — those four are now DESCRIPTIVE curve stats only, never a ranking basis or a single-video grade. `objective` field DEPRECATED (ignored for scoring). `retention` formula changed to a bounded, non-saturating share (fixes the 1.0-clamp bug). `analysis` object fields updated: `ranking`, `winner_variant_id`, `network_advantage`, `signal_advantage`, `decisive`. `winner_pipeline` (Mongo max-metric) removed; `compute_winner` + the GPU writer now call `rank_scores`.
+- 2026-07-19 — **The 4 metrics (`peak`/`sustained`/`retention`/`overall`) REMOVED entirely.** Winner logic is unchanged (still `scoring/signals.rank_scores` — 60% brain networks + 40% observable signals). These four were only ever descriptive curve stats after the signal-based switch; they are now gone from the code, the Score Object, and the wire: `metrics.compute_metrics` deleted, `Metrics` model + `metrics` field + `METRICS` constant removed from `schemas.py`, dropped from `score.py`/`score_batch`/`mock_score`, and stripped from the demo precomputes + `frontend/mock_api.json`. The `engagement` composite curve stays (it's what the winner reads and the UI plots). **Frontend follow-up (Base44):** stop reading `score.metrics` anywhere — see `VISUALIZATION_SPEC.md` §6.
+- 2026-07-19 — **`objective` field REMOVED entirely.** The last vestige of the metric-based winner is gone: no longer on `POST /tests` (`CreateTestReq`), `Test`, or `TestSummary`, no longer stored on the `tests` doc, and stripped from the demo seed + `frontend/mock_api.json`. `compute_winner(test_id)` dropped its `objective` arg (both repos). Winner logic unchanged (`scoring/signals.rank_scores`). The `scoring/objective.py` production-signals toolkit (`analyze_objective`, `measure_motion`, etc.) is unrelated and untouched. Sending a stray `objective` on create is simply ignored (unknown field). **Frontend follow-up (Base44):** remove `objective` from the create-test call, History, and any test-title fallback (use type · date).

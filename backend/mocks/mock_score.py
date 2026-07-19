@@ -21,12 +21,6 @@ def mock_score(variant_id: str = "var_demo0001", n: int = 18) -> dict:
                 "language": curve(1.1, 0.7), "motion": curve(1.7, 0.5),
                 "default_mode": curve(0.3, 0.9)}
     eng = [round(sum(_W[k] * networks[k][t] for k in _W), 3) for t in range(n)]
-    third = max(1, n // 3)
-    first = sum(eng[:third]) / third; last = sum(eng[-third:]) / third
-    # retention: last_third / (last_third + first_third) — bounded, non-saturating (CONTRACTS §3)
-    retention = round(last / (last + first), 3) if (last + first) else 0.5
-    metrics = {"peak": round(max(eng), 3), "sustained": round(sum(eng) / n, 3), "retention": retention}
-    metrics["overall"] = round(0.5 * metrics["sustained"] + 0.3 * metrics["retention"] + 0.2 * metrics["peak"], 3)
     rt = [{"t": t, "top_network": max(networks, key=lambda k: networks[k][t]),
            "top_region": _REGION[max(networks, key=lambda k: networks[k][t])],
            "activation": round(max(networks[k][t] for k in networks), 3)} for t in range(n)]
@@ -39,7 +33,7 @@ def mock_score(variant_id: str = "var_demo0001", n: int = 18) -> dict:
         "motion": round(_jitter(variant_id, "motion", 0.06, 0.04), 4),
         "clarity": round(_jitter(variant_id, "clarity", 700, 300), 2),
     }
-    return {"variant_id": variant_id, "networks": networks, "engagement": eng, "metrics": metrics,
+    return {"variant_id": variant_id, "networks": networks, "engagement": eng,
             "brain_frames": [f"media/{variant_id}_brain_{t:03d}.png" for t in range(n)],
             "region_timeline": rt, "signals": signals,
             "duration_sec": float(n), "sample_rate_hz": 1}

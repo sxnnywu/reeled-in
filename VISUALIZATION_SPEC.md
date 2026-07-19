@@ -42,7 +42,7 @@ A single clip is a **predicted brain-response profile**. Nothing is compared; "m
 - The **5 network curves** + the **engagement** curve (all from `scores[0]`).
 - The **brain-frame flipbook** (`scores[0].brain_frames`) synced to `region_timeline` captions (once `/explain` is wired; until then show the raw `top_network`/`top_region`).
 
-**Do NOT render, in profile mode:** `overall`, any winner/badge, a letter/number grade, or `retention`. (`overall`/`winner_variant_id` may exist in the payload — ignore them here.)
+**Do NOT render, in profile mode:** any winner/badge or a letter/number grade. (The old `peak/sustained/retention/overall` metrics were removed entirely — see §6 — so there's nothing metric-shaped to hide; just don't invent a grade.)
 
 **Framing copy:** headline "How a viewer's brain would respond to this clip." One caveat line: *"A directional neural proxy — not ground truth."*
 
@@ -54,7 +54,7 @@ A single clip is a **predicted brain-response profile**. Nothing is compared; "m
 - **Engagement curves overlaid** for all variants on one time axis (from each `scores[i].engagement`).
 - **"What separated them" bars:** one bar per brain network from `network_advantage` AND one per production signal from `signal_advantage`, sorted by value; highlight the `decisive` component. Positive = winner stronger.
 - **"Why this ranking" panel (required):** take `decisive` (e.g. `"brain:default_mode"` or `"signal:face_expression"`), strip the `brain:`/`signal:` prefix, look it up in the copy map (§4), render its one-liner + citation. This is the credibility piece — per §6, "the ranking is only credible if the research behind it is shown alongside it."
-- **Metrics** (if shown at all): render as **proxy scores** (`0.79`, or a 0–1 dial), **labeled "proxy score."** See §6.
+- **No metric cards.** `peak/sustained/retention/overall` were removed (§6) — do not render them. The comparison stands on the overlaid engagement curves + the network/signal advantage bars.
 
 ---
 
@@ -97,18 +97,18 @@ The winner + `ranking` come from `scoring/signals.rank_scores` (brain networks +
 
 ---
 
-## 6. Metrics are proxy scores, not percentages (applies everywhere)
+## 6. The `peak/sustained/retention/overall` metrics were REMOVED (2026-07-19)
 
-- Never render `retention: 1.0` as "100% retention" or `overall: 0.69` as a "69% grade."
-- They're normalized **directional-proxy** values in [0,1] (`SCORING_SCIENCE.md` §5). `retention` is a *ratio* of final-third ÷ first-third engagement, clamped at 1.0 (1.0 = "held or grew," not "perfect").
-- Present as `0.69` / a 0–1 dial / a relative bar — with the wording "proxy score," and lead the screen with the "directional proxy, not ground truth" caveat.
+- They are **no longer in the API payload** — there is no `score.metrics`. Delete any frontend code that reads or renders them. Do not compute your own client-side replacement and do not show a single-number "grade."
+- Winner logic is unchanged — the ranking still comes from `analysis` (`scoring/signals.rank_scores`: brain networks + observable signals). This change only removed the four dangling stats.
+- Still lead the Results screen with the "directional neural proxy, not ground truth" caveat.
 
 ---
 
 ## 7. A's build checklist
 - [ ] Branch Results on `analysis.mode`.
 - [ ] Profile: curves + engagement + flipbook + region timeline; **remove** metrics cards / winner / grade; add caveat copy.
-- [ ] Comparison: winner badge, overlaid engagement curves, `network_advantage` + `signal_advantage` bars (highlight `decisive`), "why this ranking" panel from §4, metrics (if shown) labeled proxy scores — never as the winner basis.
-- [ ] Kill every "%" on a metric; relabel as proxy scores.
+- [ ] Comparison: winner badge, overlaid engagement curves, `network_advantage` + `signal_advantage` bars (highlight `decisive`), "why this ranking" panel from §4. No metric cards.
+- [ ] **Remove every reference to `score.metrics` / `peak` / `sustained` / `retention` / `overall`** — the field is gone from the payload (§6).
 - [ ] `signal_advantage` currently `null` — render the family-B bars conditionally so they appear automatically when B ships it.
 - [ ] Dev against the updated `frontend/mock_api.json` (now carries an illustrative `analysis` block).

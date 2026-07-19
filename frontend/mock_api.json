@@ -3,7 +3,6 @@
     "id": "test_demo0001",
     "user_id": "usr_demo",
     "type": "upload",
-    "objective": "retention",
     "status": "complete",
     "variant_ids": [
       "var_demoA",
@@ -156,12 +155,6 @@
         0.667,
         0.553
       ],
-      "metrics": {
-        "peak": 0.721,
-        "sustained": 0.486,
-        "retention": 1.0,
-        "overall": 0.687
-      },
       "brain_frames": [
         "media/var_demoA_brain_000.png",
         "media/var_demoA_brain_001.png",
@@ -426,12 +419,6 @@
         0.667,
         0.553
       ],
-      "metrics": {
-        "peak": 0.721,
-        "sustained": 0.486,
-        "retention": 1.0,
-        "overall": 0.687
-      },
       "brain_frames": [
         "media/var_demoB_brain_000.png",
         "media/var_demoB_brain_001.png",

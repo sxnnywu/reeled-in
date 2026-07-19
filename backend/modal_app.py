@@ -279,8 +279,7 @@ def score_test_gpu(test_id: str) -> dict:
 
         wire_variants = [{"id": v["_id"], "label": v["label"], "params": v.get("params", {})}
                          for v in ordered]
-        record_test_sync_safe(test["user_id"], {"id": test_id, "objective": test.get("objective")},
-                              wire_variants, winner_id)
+        record_test_sync_safe(test["user_id"], {"id": test_id}, wire_variants, winner_id)
         return {"ok": True, "test_id": test_id, "variants_scored": len(ordered)}
     except Exception:
         d.tests.update_one({"_id": test_id},
@@ -401,7 +400,7 @@ def dryrun_eval() -> dict:
     verdict = {
         "shared_scale": pair_winner(results, "calm", "busy", "shared"),
         "perclip": pair_winner(results, "calm", "busy", "perclip"),
-        "metrics": results,
+        "clip_summaries": results,
     }
     print("DRY-RUN A/B:\n" + json.dumps(verdict, indent=2))
     return verdict

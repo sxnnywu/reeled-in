@@ -5,7 +5,6 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 NETWORKS = ["visual", "auditory", "language", "motion", "default_mode"]
-METRICS = ["peak", "sustained", "retention", "overall"]
 SAMPLE_RATE_HZ = 1
 DB_NAME = "reeled_in"
 API_BASE = "/api"
@@ -20,12 +19,6 @@ class TestStatus(str, Enum):
     complete = "complete"
     failed = "failed"
 
-class Metrics(BaseModel):
-    peak: float
-    sustained: float
-    retention: float
-    overall: float
-
 class RegionTick(BaseModel):
     t: int
     top_network: str
@@ -35,8 +28,7 @@ class RegionTick(BaseModel):
 class ScoreObject(BaseModel):
     variant_id: str
     networks: dict[str, list[float]]            # keys = NETWORKS
-    engagement: list[float]                     # composite curve
-    metrics: Metrics
+    engagement: list[float]                     # composite curve (weighted blend of the 5 networks)
     brain_frames: list[str] = Field(default_factory=list)      # media_keys, one/sec
     region_timeline: list[RegionTick] = Field(default_factory=list)
     signals: dict[str, float] = Field(default_factory=dict)     # family B (§7): face_expression, speech_rate, hand_gesture, motion, clarity
@@ -56,7 +48,6 @@ class Test(BaseModel):
     user_id: str
     type: TestType
     name: Optional[str] = None  # optional user-given title; null -> A derives a fallback
-    objective: str = "retention"
     status: TestStatus = TestStatus.pending
     variant_ids: list[str] = Field(default_factory=list)
     winner_variant_id: Optional[str] = None
@@ -71,7 +62,7 @@ class User(BaseModel):
 
 class Analysis(BaseModel):
     """How the frontend presents this test (CONTRACTS §3a). `mode` is the switch.
-    Comparison ranks on the real signals (§7), never on peak/sustained/retention/overall."""
+    Comparison ranks on the real signals (§7): brain networks + observable production signals."""
     mode: str                                    # "profile" | "comparison"
     ranking: Optional[list] = None               # [{variant_id, label, index}], best first (index = signal rank)
     winner_variant_id: Optional[str] = None      # comparison only
@@ -94,7 +85,6 @@ class TestSummary(BaseModel):
     test_id: str
     name: Optional[str] = None
     type: TestType
-    objective: str
     status: TestStatus
     created_at: str
     variant_count: int
@@ -107,7 +97,6 @@ class HistoryResp(BaseModel):
 
 class CreateTestReq(BaseModel):
     type: TestType
-    objective: str = "retention"
     name: Optional[str] = None
 
 class VoiceSpec(BaseModel):

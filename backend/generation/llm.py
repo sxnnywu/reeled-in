@@ -64,7 +64,7 @@ def record_test(user_id: str, test: dict, variants: list, winner_variant_id: str
     by_id = {v["id"]: v for v in variants}
     winner = by_id.get(winner_variant_id, {})
     lines = [
-        f"Completed A/B test {test['id']} (objective: {test.get('objective', 'retention')}).",
+        f"Completed A/B test {test['id']}.",
         f"WINNER: variant {winner.get('label', '?')} — params: {json.dumps(winner.get('params', {}))}.",
         "All variants: " + "; ".join(
             f"{v['label']}: {json.dumps(v.get('params', {}))}" for v in variants),
@@ -106,24 +106,24 @@ if __name__ == "__main__":
     # memory should surface "match pacing to script energy", not "always go slow".
     print(f"user: {user} — recording 4 staged test outcomes (fast wins hype, slow wins story)...")
     STAGED = [
-        ("test_smoke000001", "retention",
+        ("test_smoke000001",
          [mkv("A", {"script": "STOP. This changes everything. Watch.", "voice_id": "rachel", "voice_settings": {"speed": 1.15}}),
           mkv("B", {"script": "STOP. This changes everything. Watch.", "voice_id": "rachel", "voice_settings": {"speed": 0.85}})],
          "var_a00000000000"),
-        ("test_smoke000002", "retention",
+        ("test_smoke000002",
          [mkv("A", {"script": "When I was 19, I almost quit. Here's what saved me.", "voice_id": "josh", "voice_settings": {"speed": 1.15}}),
           mkv("B", {"script": "When I was 19, I almost quit. Here's what saved me.", "voice_id": "josh", "voice_settings": {"speed": 0.85}})],
          "var_b00000000000"),
-        ("test_smoke000003", "sustained",
+        ("test_smoke000003",
          [mkv("A", {"script": "HUGE update. You need this today. Go.", "voice_id": "josh", "voice_settings": {"speed": 1.1}}),
           mkv("B", {"script": "HUGE update. You need this today. Go.", "voice_id": "rachel", "voice_settings": {"speed": 0.9}})],
          "var_a00000000000"),
-        ("test_smoke000004", "retention",
+        ("test_smoke000004",
          [mkv("A", {"script": "Let me explain the one metric most creators ignore.", "voice_id": "rachel", "voice_settings": {"speed": 1.1}}),
           mkv("B", {"script": "Let me explain the one metric most creators ignore.", "voice_id": "rachel", "voice_settings": {"speed": 0.8}})],
          "var_b00000000000"),
     ]
-    for test_id, objective, variants, winner in STAGED:
-        record_test(user, {"id": test_id, "objective": objective}, variants, winner)
+    for test_id, variants, winner in STAGED:
+        record_test(user, {"id": test_id}, variants, winner)
     print("=== TIPS (should say: match pacing to script energy, not 'always slow') ===")
     print(tips(user))

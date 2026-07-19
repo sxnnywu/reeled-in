@@ -21,7 +21,6 @@ async def history(user=Depends(current_user)):
             "test_id": t["id"],
             "name": t.get("name"),
             "type": t["type"],
-            "objective": t["objective"],
             "status": t["status"],
             "created_at": t["created_at"],
             "variant_count": len(t["variant_ids"]),

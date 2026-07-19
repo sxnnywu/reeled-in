@@ -2,7 +2,7 @@
 
 Scores a batch of clips and picks a per-pair winner on a SHARED scale, so two
 clips are actually comparable. The pre-committed decision rule is: winner =
-higher `overall`. Fixed here, in code, before any labels are seen.
+higher mean composite engagement. Fixed here, in code, before any labels are seen.
 
 Two normalizations are computed so we can show the difference:
   - shared : raw activation scaled by one batch-wide reference (the fix).
@@ -17,7 +17,16 @@ from backend.scoring.networks import raw_networks, reduce_to_networks
 from backend.scoring.objective import measure_motion
 
 WEIGHTS = metrics.NETWORK_WEIGHTS
-DECISION_METRIC = "overall"  # pre-committed winner rule
+DECISION_METRIC = "mean_engagement"  # pre-committed winner rule: higher mean composite engagement
+
+
+def _summary(curve: list) -> dict:
+    """Per-clip engagement summary for the normalization comparison. The legacy
+    peak/sustained/retention/overall metrics were removed; this harness now ranks on
+    the composite engagement curve (mean), consistent with the live pipeline."""
+    c = curve or [0.0]
+    return {"mean_engagement": round(float(np.mean(c)), 4),
+            "max_engagement": round(float(np.max(c)), 4)}
 
 
 def _raw_engagement(preds) -> list:
@@ -61,8 +70,8 @@ def run_ab_eval(model, clips: dict) -> dict:
         }
         obj = measure_motion(clips[name])
         out[name] = {
-            "shared": metrics.compute_metrics(shared_norm),
-            "perclip": metrics.compute_metrics(perclips[name]),
+            "shared": _summary(shared_norm),
+            "perclip": _summary(perclips[name]),
             "systems": systems,  # mean shared-normalized activation per brain system
             "objective_motion": {"mean": obj["mean_motion"], "peak": obj["peak_motion"]},
         }

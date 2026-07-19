@@ -8,7 +8,7 @@ from backend.api.auth import current_user
 from backend.api.errors import ApiError, not_found
 from backend.db.repo import repo
 from backend.media import commit_media, resolve_media
-from backend.models.schemas import METRICS, CreateTestReq
+from backend.models.schemas import CreateTestReq
 from backend.util import new_id, now_iso
 
 router = APIRouter()
@@ -30,15 +30,12 @@ async def _save_upload(file: UploadFile, media_key: str) -> None:
 
 @router.post("/tests")
 async def create_test(body: CreateTestReq, user=Depends(current_user)):
-    if body.objective not in METRICS:
-        raise ApiError("bad_request", f"objective must be one of {METRICS}")
     now = now_iso()
     test = {
         "id": new_id("test"),
         "user_id": user["user_id"],
         "type": body.type.value,
         "name": body.name,  # optional user title; null -> A derives a fallback
-        "objective": body.objective,
         "status": "pending",
         "variant_ids": [],
         "winner_variant_id": None,

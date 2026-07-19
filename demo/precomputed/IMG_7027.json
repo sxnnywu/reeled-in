@@ -1,1 +1,309 @@
-{"variant_id": "IMG_7027", "networks": {"default_mode": [0.3551, 0.3929, 0.391, 0.3801, 0.4546, 0.5039, 0.4946, 0.539, 0.5425, 0.4558, 0.5178, 0.5507, 0.6379, 0.6319, 0.6961, 0.6599, 0.6019, 0.6665, 0.5827, 0.5748, 0.6637, 0.8213], "visual": [0.4302, 0.4651, 0.4621, 0.4928, 0.5084, 0.4886, 0.4935, 0.4774, 0.4151, 0.3738, 0.4332, 0.484, 0.4847, 0.5341, 0.475, 0.4756, 0.4301, 0.4046, 0.4037, 0.4288, 0.3937, 0.411], "language": [0.3469, 0.4644, 0.4014, 0.3575, 0.3991, 0.4678, 0.5691, 0.7366, 0.7915, 0.7006, 0.8319, 0.7782, 0.9108, 0.8408, 0.9405, 0.8714, 0.8392, 0.8956, 0.7498, 0.6929, 0.837, 0.934], "auditory": [0.5569, 0.5651, 0.4082, 0.2211, 0.1589, 0.3155, 0.5628, 0.7514, 0.8331, 0.7492, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9751, 0.7753, 0.4443, 0.4153, 0.2687, 0.2283], "motion": [0.4145, 0.3545, 0.3313, 0.3147, 0.3278, 0.3335, 0.3381, 0.3493, 0.3354, 0.2737, 0.3191, 0.3044, 0.3235, 0.3208, 0.3155, 0.3142, 0.3139, 0.3323, 0.3294, 0.2716, 0.2411, 0.2736]}, "engagement": [0.4084, 0.4472, 0.4075, 0.3734, 0.3999, 0.4476, 0.5038, 0.576, 0.5833, 0.5101, 0.6119, 0.6223, 0.6771, 0.6733, 0.6972, 0.6726, 0.6336, 0.6297, 0.5253, 0.5077, 0.5293, 0.5975], "metrics": {"peak": 0.6972, "sustained": 0.547, "retention": 1.0, "overall": 0.713}, "brain_frames": ["media/IMG_7027_brain_000.png", "media/IMG_7027_brain_001.png", "media/IMG_7027_brain_002.png", "media/IMG_7027_brain_003.png", "media/IMG_7027_brain_004.png", "media/IMG_7027_brain_005.png", "media/IMG_7027_brain_006.png", "media/IMG_7027_brain_007.png", "media/IMG_7027_brain_008.png", "media/IMG_7027_brain_009.png", "media/IMG_7027_brain_010.png", "media/IMG_7027_brain_011.png", "media/IMG_7027_brain_012.png", "media/IMG_7027_brain_013.png", "media/IMG_7027_brain_014.png", "media/IMG_7027_brain_015.png", "media/IMG_7027_brain_016.png", "media/IMG_7027_brain_017.png", "media/IMG_7027_brain_018.png", "media/IMG_7027_brain_019.png", "media/IMG_7027_brain_020.png", "media/IMG_7027_brain_021.png"], "region_timeline": [{"t": 0, "top_network": "auditory", "top_region": "primary_auditory", "activation": 0.5569}, {"t": 1, "top_network": "auditory", "top_region": "primary_auditory", "activation": 0.5651}, {"t": 2, "top_network": "visual", "top_region": "fusiform_face_area", "activation": 0.4621}, {"t": 3, "top_network": "visual", "top_region": "fusiform_face_area", "activation": 0.4928}, {"t": 4, "top_network": "visual", "top_region": "fusiform_face_area", "activation": 0.5084}, {"t": 5, "top_network": "default_mode", "top_region": "prefrontal_dmn", "activation": 0.5039}, {"t": 6, "top_network": "language", "top_region": "broca_area", "activation": 0.5691}, {"t": 7, "top_network": "auditory", "top_region": "primary_auditory", "activation": 0.7514}, {"t": 8, "top_network": "auditory", "top_region": "primary_auditory", "activation": 0.8331}, {"t": 9, "top_network": "auditory", "top_region": "primary_auditory", "activation": 0.7492}, {"t": 10, "top_network": "auditory", "top_region": "primary_auditory", "activation": 1.0}, {"t": 11, "top_network": "auditory", "top_region": "primary_auditory", "activation": 1.0}, {"t": 12, "top_network": "auditory", "top_region": "primary_auditory", "activation": 1.0}, {"t": 13, "top_network": "auditory", "top_region": "primary_auditory", "activation": 1.0}, {"t": 14, "top_network": "auditory", "top_region": "primary_auditory", "activation": 1.0}, {"t": 15, "top_network": "auditory", "top_region": "primary_auditory", "activation": 1.0}, {"t": 16, "top_network": "auditory", "top_region": "primary_auditory", "activation": 0.9751}, {"t": 17, "top_network": "language", "top_region": "broca_area", "activation": 0.8956}, {"t": 18, "top_network": "language", "top_region": "broca_area", "activation": 0.7498}, {"t": 19, "top_network": "language", "top_region": "broca_area", "activation": 0.6929}, {"t": 20, "top_network": "language", "top_region": "broca_area", "activation": 0.837}, {"t": 21, "top_network": "language", "top_region": "broca_area", "activation": 0.934}], "duration_sec": 22.0, "sample_rate_hz": 1}
+{
+  "variant_id": "IMG_7027",
+  "networks": {
+    "default_mode": [
+      0.3551,
+      0.3929,
+      0.391,
+      0.3801,
+      0.4546,
+      0.5039,
+      0.4946,
+      0.539,
+      0.5425,
+      0.4558,
+      0.5178,
+      0.5507,
+      0.6379,
+      0.6319,
+      0.6961,
+      0.6599,
+      0.6019,
+      0.6665,
+      0.5827,
+      0.5748,
+      0.6637,
+      0.8213
+    ],
+    "visual": [
+      0.4302,
+      0.4651,
+      0.4621,
+      0.4928,
+      0.5084,
+      0.4886,
+      0.4935,
+      0.4774,
+      0.4151,
+      0.3738,
+      0.4332,
+      0.484,
+      0.4847,
+      0.5341,
+      0.475,
+      0.4756,
+      0.4301,
+      0.4046,
+      0.4037,
+      0.4288,
+      0.3937,
+      0.411
+    ],
+    "language": [
+      0.3469,
+      0.4644,
+      0.4014,
+      0.3575,
+      0.3991,
+      0.4678,
+      0.5691,
+      0.7366,
+      0.7915,
+      0.7006,
+      0.8319,
+      0.7782,
+      0.9108,
+      0.8408,
+      0.9405,
+      0.8714,
+      0.8392,
+      0.8956,
+      0.7498,
+      0.6929,
+      0.837,
+      0.934
+    ],
+    "auditory": [
+      0.5569,
+      0.5651,
+      0.4082,
+      0.2211,
+      0.1589,
+      0.3155,
+      0.5628,
+      0.7514,
+      0.8331,
+      0.7492,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9751,
+      0.7753,
+      0.4443,
+      0.4153,
+      0.2687,
+      0.2283
+    ],
+    "motion": [
+      0.4145,
+      0.3545,
+      0.3313,
+      0.3147,
+      0.3278,
+      0.3335,
+      0.3381,
+      0.3493,
+      0.3354,
+      0.2737,
+      0.3191,
+      0.3044,
+      0.3235,
+      0.3208,
+      0.3155,
+      0.3142,
+      0.3139,
+      0.3323,
+      0.3294,
+      0.2716,
+      0.2411,
+      0.2736
+    ]
+  },
+  "engagement": [
+    0.4084,
+    0.4472,
+    0.4075,
+    0.3734,
+    0.3999,
+    0.4476,
+    0.5038,
+    0.576,
+    0.5833,
+    0.5101,
+    0.6119,
+    0.6223,
+    0.6771,
+    0.6733,
+    0.6972,
+    0.6726,
+    0.6336,
+    0.6297,
+    0.5253,
+    0.5077,
+    0.5293,
+    0.5975
+  ],
+  "brain_frames": [
+    "media/IMG_7027_brain_000.png",
+    "media/IMG_7027_brain_001.png",
+    "media/IMG_7027_brain_002.png",
+    "media/IMG_7027_brain_003.png",
+    "media/IMG_7027_brain_004.png",
+    "media/IMG_7027_brain_005.png",
+    "media/IMG_7027_brain_006.png",
+    "media/IMG_7027_brain_007.png",
+    "media/IMG_7027_brain_008.png",
+    "media/IMG_7027_brain_009.png",
+    "media/IMG_7027_brain_010.png",
+    "media/IMG_7027_brain_011.png",
+    "media/IMG_7027_brain_012.png",
+    "media/IMG_7027_brain_013.png",
+    "media/IMG_7027_brain_014.png",
+    "media/IMG_7027_brain_015.png",
+    "media/IMG_7027_brain_016.png",
+    "media/IMG_7027_brain_017.png",
+    "media/IMG_7027_brain_018.png",
+    "media/IMG_7027_brain_019.png",
+    "media/IMG_7027_brain_020.png",
+    "media/IMG_7027_brain_021.png"
+  ],
+  "region_timeline": [
+    {
+      "t": 0,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 0.5569
+    },
+    {
+      "t": 1,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 0.5651
+    },
+    {
+      "t": 2,
+      "top_network": "visual",
+      "top_region": "fusiform_face_area",
+      "activation": 0.4621
+    },
+    {
+      "t": 3,
+      "top_network": "visual",
+      "top_region": "fusiform_face_area",
+      "activation": 0.4928
+    },
+    {
+      "t": 4,
+      "top_network": "visual",
+      "top_region": "fusiform_face_area",
+      "activation": 0.5084
+    },
+    {
+      "t": 5,
+      "top_network": "default_mode",
+      "top_region": "prefrontal_dmn",
+      "activation": 0.5039
+    },
+    {
+      "t": 6,
+      "top_network": "language",
+      "top_region": "broca_area",
+      "activation": 0.5691
+    },
+    {
+      "t": 7,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 0.7514
+    },
+    {
+      "t": 8,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 0.8331
+    },
+    {
+      "t": 9,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 0.7492
+    },
+    {
+      "t": 10,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 1.0
+    },
+    {
+      "t": 11,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 1.0
+    },
+    {
+      "t": 12,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 1.0
+    },
+    {
+      "t": 13,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 1.0
+    },
+    {
+      "t": 14,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 1.0
+    },
+    {
+      "t": 15,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 1.0
+    },
+    {
+      "t": 16,
+      "top_network": "auditory",
+      "top_region": "primary_auditory",
+      "activation": 0.9751
+    },
+    {
+      "t": 17,
+      "top_network": "language",
+      "top_region": "broca_area",
+      "activation": 0.8956
+    },
+    {
+      "t": 18,
+      "top_network": "language",
+      "top_region": "broca_area",
+      "activation": 0.7498
+    },
+    {
+      "t": 19,
+      "top_network": "language",
+      "top_region": "broca_area",
+      "activation": 0.6929
+    },
+    {
+      "t": 20,
+      "top_network": "language",
+      "top_region": "broca_area",
+      "activation": 0.837
+    },
+    {
+      "t": 21,
+      "top_network": "language",
+      "top_region": "broca_area",
+      "activation": 0.934
+    }
+  ],
+  "duration_sec": 22.0,
+  "sample_rate_hz": 1
+}

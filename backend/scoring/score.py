@@ -1,7 +1,7 @@
 """score(media_key) -> ScoreObject dict. Public entrypoint. Owner: B (Jay).
 
 Pipeline: media_key -> local file -> TRIBE predict (vertices/sec)
-  -> networks.reduce_to_networks -> metrics (engagement + composite)
+  -> networks.reduce_to_networks -> metrics.compute_engagement (composite curve)
   -> regions.region_timeline -> brain_frames -> ScoreObject (CONTRACTS.md §3).
 """
 
@@ -47,7 +47,6 @@ def score(media_key: str) -> dict:
 
     networks = reduce_to_networks(preds)
     engagement = metrics.compute_engagement(networks)
-    m = metrics.compute_metrics(engagement)
     timeline = region_timeline(preds)
     n_timesteps = len(engagement)
 
@@ -55,7 +54,6 @@ def score(media_key: str) -> dict:
         "variant_id": variant_id,
         "networks": networks,
         "engagement": engagement,
-        "metrics": m,
         # PHASE 2: brain_render.render_frames(preds, variant_id) -> per-second PNGs.
         "brain_frames": [],
         "region_timeline": timeline,
@@ -72,7 +70,7 @@ def score_batch(media_keys: list, render_brains: bool = False) -> list:
 
     Per-network reference = 95th percentile of that network's raw activation
     across the whole batch (same robust-max as eval_ab). Every downstream number
-    — network curves, engagement (§3 blend), metrics, region_timeline activations —
+    — network curves, engagement (§3 blend), region_timeline activations —
     sits on that shared scale, so variants are directly comparable. Numbers are
     only meaningful within this batch, never across tests.
 
@@ -111,7 +109,6 @@ def score_batch(media_keys: list, render_brains: bool = False) -> list:
             "variant_id": variant_id,
             "networks": networks,
             "engagement": engagement,
-            "metrics": metrics.compute_metrics(engagement),
             "brain_frames": brain_frames,
             "region_timeline": region_timeline_from_networks(networks),
             "signals": {},  # family B (CONTRACTS §3); filled by signals.collect_signals

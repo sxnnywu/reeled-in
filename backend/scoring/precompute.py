@@ -28,6 +28,8 @@ def precompute(clips: dict, cache_dir: str = "/cache") -> dict:
         vid = score_obj["variant_id"]
         with open(f"{out_dir}/{vid}.json", "w") as f:
             json.dump(score_obj, f)
-        summary[vid] = {"metrics": score_obj["metrics"], "n_brain_frames": len(score_obj["brain_frames"])}
-        print(f"precomputed {vid}: {score_obj['metrics']}  ({len(score_obj['brain_frames'])} brain frames)")
+        eng = score_obj["engagement"]
+        mean_eng = round(sum(eng) / max(1, len(eng)), 4)
+        summary[vid] = {"mean_engagement": mean_eng, "n_brain_frames": len(score_obj["brain_frames"])}
+        print(f"precomputed {vid}: mean_engagement={mean_eng}  ({len(score_obj['brain_frames'])} brain frames)")
     return summary

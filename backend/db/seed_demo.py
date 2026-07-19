@@ -38,7 +38,7 @@ async def seed(folder: str = "demo/precomputed", name: str = "Demo — Hook Batt
     now = now_iso()
     test = {
         "id": new_id("test"), "user_id": DEMO_USER, "type": "upload", "name": name,
-        "objective": "retention", "status": "pending", "variant_ids": [],
+        "status": "pending", "variant_ids": [],
         "winner_variant_id": None, "created_at": now, "updated_at": now,
     }
     await r.insert_test(test)
@@ -59,7 +59,7 @@ async def seed(folder: str = "demo/precomputed", name: str = "Demo — Hook Batt
         await r.upsert_score(test["id"], score_obj)
         variant_ids.append(variant_id)
 
-    winner = await r.compute_winner(test["id"], test["objective"])
+    winner = await r.compute_winner(test["id"])
     await r.update_test(test["id"], {
         "variant_ids": variant_ids, "status": "complete",
         "winner_variant_id": winner, "updated_at": now_iso(),
@@ -70,7 +70,7 @@ async def seed(folder: str = "demo/precomputed", name: str = "Demo — Hook Batt
 
 async def seed_docs(path: str = "demo/seed/demo_docs.json") -> None:
     """Upsert raw §4-shaped documents {users, tests, variants, scores} — e.g. D's
-    hand-crafted demo set (curves are formula-consistent; winner matches objective).
+    hand-crafted demo set (curves are formula-consistent; winner from rank_scores).
     Requires Mongo mode. Usage: python -m backend.db.seed_demo --docs [path]"""
     from backend.db.mongo import db
 

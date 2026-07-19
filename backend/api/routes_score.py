@@ -43,7 +43,7 @@ def _spawn_gpu(test_id: str) -> None:
 
 
 async def _finalize(test: dict) -> None:
-    winner = await repo().compute_winner(test["id"], test["objective"])
+    winner = await repo().compute_winner(test["id"])
     await repo().update_test(
         test["id"],
         {"status": "complete", "winner_variant_id": winner, "updated_at": now_iso()},
@@ -57,10 +57,9 @@ async def _finalize(test: dict) -> None:
 @router.post("/tests/{test_id}/score")
 async def score_test(test_id: str, user=Depends(current_user)):
     test = await get_test_or_404(test_id)
-    # Single-variant tests allowed (engagement audit of one video): winner is the
-    # sole variant; with n=1 the shared scale is self-referenced, so absolute
-    # peak/sustained are self-relative — curve shape/retention/timeline remain
-    # meaningful. [D edit — C please review]
+    # Single-variant tests allowed (engagement audit of one video): no winner —
+    # it's a profile (§3a). With n=1 the shared scale is self-referenced, so the
+    # engagement curve, region timeline, and brain frames stay meaningful.
     if len(test["variant_ids"]) < 1:
         raise ApiError("bad_request", "need at least 1 variant to score")
 
