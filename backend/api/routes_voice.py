@@ -92,55 +92,84 @@ async def suggest(body: SuggestReq, user=Depends(current_user)):
         raise ApiError("internal", f"suggest failed: {e}", 500)
 
 
-def _current_result_summary(test: dict, variants: list, scores: list):
-    """Plain-language description of THIS test's outcome, fed into /tips so the advice is
-    about the clip the creator is viewing (not just cross-test memory). None if unscored."""
+def _setup(v: dict) -> str:
+    """One-line human description of a variant's knobs (voice humanized, pace bucketed)."""
+    p = dict(v.get("params") or {})
+    vid = p.pop("voice_id", None)
+    bits = []
+    if p.get("script"):
+        bits.append(f'script "{p["script"][:90]}"')
+    if vid:
+        bits.append(f"voice {intel.VOICE_NAMES.get(vid, 'a custom voice')}")
+    speed = (p.get("voice_settings") or {}).get("speed")
+    if speed:
+        bits.append(f"{'fast' if speed > 1.02 else 'slow' if speed < 0.98 else 'normal'} pace ({speed})")
+    return ", ".join(bits) or "an uploaded clip"
+
+
+def _improve_context(test: dict, variants: list, scores: list):
+    """Per-variant profile (setup + each variant's strongest/weakest brain systems + the
+    winner) fed to /tips, so it recommends concrete improvements FOR EACH variant targeting
+    its weak areas — not just restating what already won. None if unscored."""
     from backend.analysis import build_analysis
     from backend.science import COMPONENTS
 
-    def setup(v):
-        p = dict(v.get("params") or {})
-        vid = p.pop("voice_id", None)
-        bits = []
-        if p.get("script"):
-            bits.append(f'script "{p["script"][:90]}"')
-        if vid:
-            bits.append(f"voice {intel.VOICE_NAMES.get(vid, 'a custom voice')}")
-        speed = (p.get("voice_settings") or {}).get("speed")
-        if speed:
-            bits.append(f"pace {'fast' if speed > 1.02 else 'slow' if speed < 0.98 else 'normal'} ({speed})")
-        return ", ".join(bits) or "an uploaded clip"
-
     if not scores:
         return None
+    labels = {c["key"]: c["label"] for c in COMPONENTS}
+    by_vid = {s["variant_id"]: s for s in scores}
     a = build_analysis(test, variants, scores)
-    if a.get("mode") == "comparison" and a.get("winner_variant_id"):
-        by_id = {v["id"]: v for v in variants}
-        w = by_id.get(a["winner_variant_id"], {})
-        comp = next((c for c in COMPONENTS if c["key"] == a.get("decisive")), None)
-        why = comp["label"] if comp else "the measured engagement signals"
-        lines = [f"The creator just ran an A/B test. Variant {w.get('label', '?')} WON.",
-                 f"It won mainly on {why}.",
-                 f"Winner {w.get('label')}: {setup(w)}."]
-        for v in variants:
-            if v["id"] != a["winner_variant_id"]:
-                lines.append(f"Variant {v['label']} (lost): {setup(v)}.")
-        return " ".join(lines)
-    v = variants[0] if variants else {}
-    return (f"The creator is viewing a single-video brain profile for {setup(v)}. "
-            "There is no winner (nothing was compared).")
+    lines = []
+    if a.get("winner_variant_id"):
+        wl = next((v["label"] for v in variants if v["id"] == a["winner_variant_id"]), "?")
+        lines.append(f"A/B test — Variant {wl} won, mainly on {labels.get(a.get('decisive'), 'the measured signals')}.")
+    for v in variants:
+        s = by_vid.get(v["id"])
+        if not s:
+            continue
+        means = {k: sum(x) / len(x) for k, x in (s.get("networks") or {}).items() if x}
+        if means:
+            strong = ", ".join(labels.get(f"brain:{n}", n) for n in sorted(means, key=means.get, reverse=True)[:2])
+            weak = ", ".join(labels.get(f"brain:{n}", n) for n in sorted(means, key=means.get)[:2])
+            lines.append(f"Variant {v['label']} — {_setup(v)}. Strongest: {strong}. Weakest: {weak}.")
+        else:
+            lines.append(f"Variant {v['label']} — {_setup(v)}.")
+    return "\n".join(lines) or None
+
+
+def _parse_per_variant(text: str, variants: list):
+    """Parse the LLM's 'VARIANT <label>\\n- rec…' blocks into structured per-variant recs.
+    Returns None if it doesn't parse (frontend then falls back to the raw `tips` text)."""
+    import re
+
+    by_label = {v["label"].strip().upper(): v for v in variants}
+    per = []
+    for block in re.split(r"(?im)^\s*VARIANT\s+", text or ""):
+        block = block.strip()
+        if not block:
+            continue
+        head = block.splitlines()[0].strip().rstrip(":").upper()
+        v = by_label.get(head) or (by_label.get(head.split()[0]) if head.split() else None)
+        recs = [re.sub(r"^\s*(?:[-*•]|\d+[.)])\s*", "", ln).strip()
+                for ln in block.splitlines()[1:]
+                if re.match(r"^\s*(?:[-*•]|\d+[.)])\s+", ln)]
+        if v and recs:
+            per.append({"variant_id": v["id"], "label": v["label"], "recommendations": recs[:3]})
+    return per or None
 
 
 @router.get("/tests/{test_id}/tips")
 async def tips(test_id: str, user=Depends(current_user)):
-    """Advice grounded in THIS test's result + Backboard memory (users.backboard_thread_id)."""
+    """Per-variant improvement recommendations grounded in THIS test + Backboard memory.
+    Returns `{tips: <text>, per_variant: [{variant_id, label, recommendations:[…]}] | null}`."""
     test = await get_test_or_404(test_id)
     if intel.real_mode():
         try:
             variants = await repo().variants_for(test)
             scores = await repo().scores_for(test)
-            summary = _current_result_summary(test, variants, scores)
-            return {"tips": await intel.tips(test["user_id"], summary)}
+            ctx = _improve_context(test, variants, scores)
+            text = await intel.tips(test["user_id"], ctx)
+            return {"tips": text, "per_variant": _parse_per_variant(text, variants) if ctx else None}
         except Exception:
             pass  # Backboard hiccup must not break the screen — fall through to stub
-    return {"tips": _STUB_TIPS}
+    return {"tips": _STUB_TIPS, "per_variant": None}

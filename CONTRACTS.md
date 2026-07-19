@@ -111,7 +111,7 @@ Base path `API_BASE = /api`. All bodies + responses are JSON, snake_case. All au
 | GET  | `/api/tests/{test_id}` | — | `{ test: Test, variants: [Variant], scores: [ScoreObject] }` |
 | GET  | `/api/history` | — | `{ tests: [TestSummary] }` |
 | POST | `/api/suggest` | `{ base_media_key, context? }` | `{ variants: [VoiceSpec], rationale, transcript }` |
-| GET  | `/api/tests/{test_id}/tips` (opt) | — | `{ tips: string }` |
+| GET  | `/api/tests/{test_id}/tips` | — | `{ tips: string, per_variant: [{ variant_id, label, recommendations: [string] }] \| null }` |
 | POST | `/api/tests/{test_id}/explain` | — | `{ explanations: { "<variant_id>": [ { "t": int, "text": string } ] } }` |
 
 - **`VoiceSpec`** (one requested voice variant; the client decides which knobs vary across a test — voice, script, pacing, or any mix):

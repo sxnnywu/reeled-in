@@ -81,12 +81,15 @@ def tips(user_id: str, current_result: str = None) -> str:
     personalization; else fall back to pure cross-test memory. [C edit — D please review]"""
     if current_result:
         prompt = (
-            f"THE A/B TEST THE CREATOR IS LOOKING AT RIGHT NOW:\n{current_result}\n\n"
-            "Give 2-3 short, concrete, actionable tips to improve THIS clip and what to test "
-            "next, grounded specifically in this result — name the winning choice and why it "
-            "worked, and suggest the next variable to test. Weave in anything you remember "
-            "about their past tests for extra personalization, but keep the tips about this "
-            "clip. Do NOT say you have no data. Plain text, no markdown."
+            f"THE CREATOR'S A/B TEST — each variant's profile:\n{current_result}\n\n"
+            "For EACH variant, give exactly 3 specific, actionable improvements to TEST NEXT — "
+            "concrete changes that would make THAT variant perform better, targeting its weak "
+            "areas. Do NOT restate what already worked or why a variant won; every tip must be a "
+            "change to make next time. Ground each in that variant's own script/voice/pace and "
+            "weak dimensions. Use memory of past tests if relevant. Respond in EXACTLY this "
+            "format and nothing else (no intro, no closing line, no markdown):\n"
+            "VARIANT A\n- <tip>\n- <tip>\n- <tip>\n"
+            "VARIANT B\n- <tip>\n- <tip>\n- <tip>"
         )
     else:
         prompt = (
