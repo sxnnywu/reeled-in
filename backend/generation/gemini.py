@@ -9,9 +9,10 @@ import requests
 
 from backend.generation.overlay import resolve
 
-# 2.5-flash-lite: highest free-tier quota; 2.0-flash 429s on the free tier.
-MODEL = "gemini-2.5-flash-lite"
-URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
+# Via OpenRouter (paid, no free-tier 429s — the shared AI Studio key kept quota-failing
+# /suggest during the hackathon). Same Gemini family, OpenAI-compatible wire format.
+MODEL = "google/gemini-3.5-flash"
+URL = "https://openrouter.ai/api/v1/chat/completions"
 
 PROMPT = """You are a short-form video A/B testing strategist. Watch this video, including any
 existing audio/voiceover it already has. Based on what is actually there — pacing of cuts,
@@ -59,20 +60,22 @@ def suggest(base_media_key: str, context: str = "", n: int = 3) -> dict:
         context_line=f"Creator context: {context}" if context else "",
     )
     body = {
-        "contents": [{"parts": [
-            {"inline_data": {"mime_type": "video/mp4", "data": video_b64}},
-            {"text": prompt},
+        "model": MODEL,
+        "messages": [{"role": "user", "content": [
+            {"type": "video_url",
+             "video_url": {"url": f"data:video/mp4;base64,{video_b64}"}},
+            {"type": "text", "text": prompt},
         ]}],
-        "generationConfig": {"response_mime_type": "application/json"},
+        "response_format": {"type": "json_object"},
     }
+    headers = {"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"}
     for attempt in range(4):  # 503/429 are routine on larger video payloads
-        resp = requests.post(URL, params={"key": os.environ["GEMINI_API_KEY"]},
-                             json=body, timeout=120)
+        resp = requests.post(URL, headers=headers, json=body, timeout=120)
         if resp.status_code not in (429, 500, 502, 503):
             break
         time.sleep(2 ** attempt * 5)  # 5s, 10s, 20s
     resp.raise_for_status()
-    out = json.loads(resp.json()["candidates"][0]["content"]["parts"][0]["text"])
+    out = json.loads(resp.json()["choices"][0]["message"]["content"])
     out.setdefault("transcript", None)
     for i, v in enumerate(out.get("variants", [])):
         v.setdefault("label", chr(ord("A") + i))
