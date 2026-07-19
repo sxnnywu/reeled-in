@@ -589,6 +589,22 @@
       "motion": -0.03,
       "clarity": 120.0
     },
-    "decisive": "signal:face_expression"
+    "decisive": "signal:face_expression",
+    "decisive_detail": {
+      "component": "signal:face_expression",
+      "label": "Facial expression",
+      "values": [
+        {
+          "variant_id": "var_demoB",
+          "label": "B (hook 2)",
+          "value": 0.66
+        },
+        {
+          "variant_id": "var_demoA",
+          "label": "A (hook 1)",
+          "value": 0.52
+        }
+      ]
+    }
   }
 }

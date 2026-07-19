@@ -69,6 +69,7 @@ class Analysis(BaseModel):
     network_advantage: Optional[dict] = None     # winner − runner-up, per brain network (§7 family A)
     signal_advantage: Optional[dict] = None      # winner − runner-up, per production signal (§7 family B)
     decisive: Optional[str] = None               # component that most separated the winner ("brain:*" | "signal:*")
+    decisive_detail: Optional[dict] = None       # {component, label, values:[{variant_id,label,value}]} winner-first
 
 class TestDetail(BaseModel):
     test: Test
