@@ -110,5 +110,5 @@ The winner + `ranking` come from `scoring/signals.rank_scores` (brain networks +
 - [ ] Profile: curves + engagement + flipbook + region timeline; **remove** metrics cards / winner / grade; add caveat copy.
 - [ ] Comparison: winner badge, overlaid engagement curves, `network_advantage` + `signal_advantage` bars (highlight `decisive`), "why this ranking" panel from §4. No metric cards.
 - [ ] **Remove every reference to `score.metrics` / `peak` / `sustained` / `retention` / `overall`** — the field is gone from the payload (§6).
-- [ ] `signal_advantage` currently `null` — render the family-B bars conditionally so they appear automatically when B ships it.
+- [ ] `signal_advantage` is now **live** (populated for tests scored with the signal toolkit; `{}`/0 on pre-signal tests) — render the family-B bars from it, guarding for the empty case.
 - [ ] Dev against the updated `frontend/mock_api.json` (now carries an illustrative `analysis` block).
