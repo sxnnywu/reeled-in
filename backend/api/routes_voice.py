@@ -92,14 +92,55 @@ async def suggest(body: SuggestReq, user=Depends(current_user)):
         raise ApiError("internal", f"suggest failed: {e}", 500)
 
 
+def _current_result_summary(test: dict, variants: list, scores: list):
+    """Plain-language description of THIS test's outcome, fed into /tips so the advice is
+    about the clip the creator is viewing (not just cross-test memory). None if unscored."""
+    from backend.analysis import build_analysis
+    from backend.science import COMPONENTS
+
+    def setup(v):
+        p = dict(v.get("params") or {})
+        vid = p.pop("voice_id", None)
+        bits = []
+        if p.get("script"):
+            bits.append(f'script "{p["script"][:90]}"')
+        if vid:
+            bits.append(f"voice {intel.VOICE_NAMES.get(vid, 'a custom voice')}")
+        speed = (p.get("voice_settings") or {}).get("speed")
+        if speed:
+            bits.append(f"pace {'fast' if speed > 1.02 else 'slow' if speed < 0.98 else 'normal'} ({speed})")
+        return ", ".join(bits) or "an uploaded clip"
+
+    if not scores:
+        return None
+    a = build_analysis(test, variants, scores)
+    if a.get("mode") == "comparison" and a.get("winner_variant_id"):
+        by_id = {v["id"]: v for v in variants}
+        w = by_id.get(a["winner_variant_id"], {})
+        comp = next((c for c in COMPONENTS if c["key"] == a.get("decisive")), None)
+        why = comp["label"] if comp else "the measured engagement signals"
+        lines = [f"The creator just ran an A/B test. Variant {w.get('label', '?')} WON.",
+                 f"It won mainly on {why}.",
+                 f"Winner {w.get('label')}: {setup(w)}."]
+        for v in variants:
+            if v["id"] != a["winner_variant_id"]:
+                lines.append(f"Variant {v['label']} (lost): {setup(v)}.")
+        return " ".join(lines)
+    v = variants[0] if variants else {}
+    return (f"The creator is viewing a single-video brain profile for {setup(v)}. "
+            "There is no winner (nothing was compared).")
+
+
 @router.get("/tests/{test_id}/tips")
 async def tips(test_id: str, user=Depends(current_user)):
-    """Personalized tips from Backboard memory (thread map: users.backboard_thread_id)."""
+    """Advice grounded in THIS test's result + Backboard memory (users.backboard_thread_id)."""
     test = await get_test_or_404(test_id)
     if intel.real_mode():
         try:
-            # tips are per-USER memory; the route hangs off a test — resolve owner
-            return {"tips": await intel.tips(test["user_id"])}
+            variants = await repo().variants_for(test)
+            scores = await repo().scores_for(test)
+            summary = _current_result_summary(test, variants, scores)
+            return {"tips": await intel.tips(test["user_id"], summary)}
         except Exception:
             pass  # Backboard hiccup must not break the screen — fall through to stub
     return {"tips": _STUB_TIPS}

@@ -101,11 +101,11 @@ async def voice_variants(base_media_key: str, specs: list) -> list:
     return await asyncio.to_thread(variants.generate_voice_variants, base_media_key, specs)
 
 
-async def tips(user_id: str) -> str:
+async def tips(user_id: str, current_result: str = None) -> str:
     init_intel()
     from backend.generation import llm
 
-    return await asyncio.to_thread(llm.tips, user_id)
+    return await asyncio.to_thread(llm.tips, user_id, current_result)
 
 
 async def explain(region_timeline: list):

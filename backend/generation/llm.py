@@ -75,16 +75,28 @@ def record_test(user_id: str, test: dict, variants: list, winner_variant_id: str
     return out["thread_id"]
 
 
-def tips(user_id: str) -> str:
-    """Personalized advice from the user's test history (memory read). -> tips text"""
-    out = _post(
-        "Based on everything you remember about this creator's past A/B tests — which "
-        "variants won and with what scripts, voices, and pacing — give 2-3 short, concrete, "
-        "actionable tips for their next short-form video. If you have no history yet, give "
-        "2-3 solid general hook/pacing tips and say you'll personalize as they run tests. "
-        "Plain text, no markdown.",
-        _get_thread(user_id),
-    )
+def tips(user_id: str, current_result: str = None) -> str:
+    """Advice for the creator. If `current_result` is given (the test they're viewing on
+    the results page), ground the tips in THIS clip's outcome and use memory for extra
+    personalization; else fall back to pure cross-test memory. [C edit — D please review]"""
+    if current_result:
+        prompt = (
+            f"THE A/B TEST THE CREATOR IS LOOKING AT RIGHT NOW:\n{current_result}\n\n"
+            "Give 2-3 short, concrete, actionable tips to improve THIS clip and what to test "
+            "next, grounded specifically in this result — name the winning choice and why it "
+            "worked, and suggest the next variable to test. Weave in anything you remember "
+            "about their past tests for extra personalization, but keep the tips about this "
+            "clip. Do NOT say you have no data. Plain text, no markdown."
+        )
+    else:
+        prompt = (
+            "Based on everything you remember about this creator's past A/B tests — which "
+            "variants won and with what scripts, voices, and pacing — give 2-3 short, concrete, "
+            "actionable tips for their next short-form video. If you have no history yet, give "
+            "2-3 solid general hook/pacing tips and say you'll personalize as they run tests. "
+            "Plain text, no markdown."
+        )
+    out = _post(prompt, _get_thread(user_id))
     _set_thread(user_id, out["thread_id"])
     return out["content"]
 
