@@ -19,7 +19,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from backend.api import routes_history, routes_media, routes_score, routes_tests, routes_voice
+from backend.api import (
+    routes_history, routes_media, routes_science, routes_score, routes_tests, routes_voice,
+)
 from backend.api.errors import ApiError
 
 _STATUS_TO_CODE = {400: "bad_request", 401: "unauthorized", 404: "not_found", 422: "bad_request"}
@@ -49,7 +51,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-for m in (routes_tests, routes_score, routes_voice, routes_history, routes_media):
+for m in (routes_tests, routes_score, routes_voice, routes_history, routes_media, routes_science):
     app.include_router(m.router, prefix="/api")
 
 
