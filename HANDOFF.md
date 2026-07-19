@@ -38,7 +38,7 @@ guarantee.
 - **Frontend API client:** `src/lib/api.js` in the Base44 project — one module, all fetch calls.
   Auth is a **one-line hook**: `setAuthToken(token)` will attach `Authorization: Bearer …`.
 - **Auth0 (SPA, public config — safe to share):** domain `dev-1xz0uq0mv6hryu17.us.auth0.com`,
-  clientId `SZMANyKXCW3qLnID3Lk9BO6evLOjZAMf`, **audience `https://api.reeledin.app/`**
+  clientId `SZMANyKXCW3qLnID3Lk9BO6evLOjZAMf`, **audience `https://api.reeledin.app`** (NO trailing slash — Auth0 exact-matches the API identifier; a slash gets the token rejected)
   (MUST pass audience or the API rejects the id-token; access tokens only; popup mode;
   `@auth0/auth0-react`). Base44 + localhost already whitelisted in Auth0.
 - **Demo test IDs:**
